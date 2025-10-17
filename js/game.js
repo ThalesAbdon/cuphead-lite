@@ -69,6 +69,24 @@ const sprites = {
     "assets/sprites/shoot/straight/cuphead_shoot_straight_0002.png",
     "assets/sprites/shoot/straight/cuphead_shoot_straight_0003.png",
   ]),
+  playerRunShoot: await loadImages([
+    "assets/sprites/shoot/run/cuphead_run_shoot_0001.png",
+    "assets/sprites/shoot/run/cuphead_run_shoot_0002.png",
+    "assets/sprites/shoot/run/cuphead_run_shoot_0003.png",
+    "assets/sprites/shoot/run/cuphead_run_shoot_0004.png",
+    "assets/sprites/shoot/run/cuphead_run_shoot_0005.png",
+    "assets/sprites/shoot/run/cuphead_run_shoot_0006.png",
+    "assets/sprites/shoot/run/cuphead_run_shoot_0007.png",
+    "assets/sprites/shoot/run/cuphead_run_shoot_0008.png",
+    "assets/sprites/shoot/run/cuphead_run_shoot_0009.png",
+    "assets/sprites/shoot/run/cuphead_run_shoot_0010.png",
+    "assets/sprites/shoot/run/cuphead_run_shoot_0011.png",
+    "assets/sprites/shoot/run/cuphead_run_shoot_0012.png",
+    "assets/sprites/shoot/run/cuphead_run_shoot_0013.png",
+    "assets/sprites/shoot/run/cuphead_run_shoot_0014.png",
+    "assets/sprites/shoot/run/cuphead_run_shoot_0015.png",
+    "assets/sprites/shoot/run/cuphead_run_shoot_0016.png",
+  ]),
   bulletSpawn: [
     { x: 3, y: 3, w: 60, h: 69, offsetX: 20, offsetY: 28 },
     { x: 68, y: 3, w: 65, h: 78, offsetX: 30, offsetY: 34 },
@@ -138,7 +156,7 @@ class Player extends Entity {
     const right = input.pressed("ArrowRight");
     const both = left && right;
 
-    if (this.state === "run" && this.turnFrom === 0 && !both) {
+    if ((this.state === "run" || this.state === "runAndShoot") && this.turnFrom === 0 && !both) {
       if (left && this.facing === 1) this.startTurn(1);
       if (right && this.facing === -1) this.startTurn(-1);
     }
@@ -155,7 +173,6 @@ class Player extends Entity {
         break;
 
       case "jump":
-      case "jump":
         this.sx = (left ? -1 : right ? 1 : 0) * speed;
         if (this.sy < 0) {
           // Está subindo
@@ -171,15 +188,33 @@ class Player extends Entity {
         break;
 
       case "run":
-        if (!(left ^ right) || both) {
-          this.state = "idle";
-          this.frame = 0;
-          break;
-        }
-        this.sx = (left ? -1 : 1) * speed;
-        this.facing = left ? -1 : 1;
-        this.animate(sprites.playerRun, this.delayRun);
-        break;
+  if (!(left ^ right) || both) {
+    this.state = "idle";
+    this.frame = 0;
+    break;
+  }
+  if (input.pressed("KeyZ")) {
+    this.state = "runAndShoot";
+    this.frame = 0;
+    break;
+  }
+
+  this.sx = (left ? -1 : 1) * speed;
+  this.facing = left ? -1 : 1;
+  this.animate(sprites.playerRun, this.delayRun);
+  break;
+
+case "runAndShoot":
+  if (!(left ^ right) || both || !input.pressed("KeyZ")) {
+    this.state = "run";
+    this.frame = 0;
+    break;
+  }
+
+  this.sx = (left ? -1 : 1) * speed;
+  this.facing = left ? -1 : 1;
+  this.animate(sprites.playerRunShoot, this.delayShoot);
+  break;
 
       case "turn":
         this.sx = 0;
@@ -224,46 +259,62 @@ class Player extends Entity {
     this.handleShooting();
   }
 
-  handleShooting() {
-    const isShooting = input.pressed("KeyZ");
-    const now = performance.now();
+handleShooting() {
+  const isShooting = input.pressed("KeyZ");
+  const now = performance.now();
 
-    if (isShooting) {
-      if (!fireButtonPressedAt) fireButtonPressedAt = now;
+  // Pode atirar parado, correndo ou correndo-atirando
+  const canRunAndShoot = this.state === "run" || this.state === "runAndShoot";
+  const canIdleShoot = this.state === "idle" || this.state === "shoot";
 
-      const holdTime = now - fireButtonPressedAt;
-      if (holdTime > 50 && !isRapidFiring) {
-        sounds.rapidFire.currentTime = 0;
-        sounds.rapidFire.loop = true;
-        sounds.rapidFire.play();
-        isRapidFiring = true;
-      }
+  if (isShooting && (canRunAndShoot || canIdleShoot)) {
+    if (!fireButtonPressedAt) fireButtonPressedAt = now;
 
-      if (canShoot()) {
-        const bulletX = this.facing === 1 ? this.x + this.w : this.x;
-        bullets.push(new Bullet(bulletX, this.y + this.h / 2 - 8, this.facing));
+    const holdTime = now - fireButtonPressedAt;
+    if (holdTime > 50 && !isRapidFiring) {
+      sounds.rapidFire.currentTime = 0;
+      sounds.rapidFire.loop = true;
+      sounds.rapidFire.play();
+      isRapidFiring = true;
+    }
+
+    if (canShoot()) {
+      // 💥 Cria o projétil
+      const bulletX = this.facing === 1 ? this.x + this.w : this.x;
+      bullets.push(new Bullet(bulletX, this.y + this.h / 2 - 8, this.facing));
+
+      // 🧠 Define o estado de animação corretamente
+      if (canIdleShoot) {
         this.state = "shoot";
         this.frame = 0;
-        this.shootUntil = now + 300;
-
-        if (!isRapidFiring) {
-          shotsInARow++;
-          clearTimeout(shotTimer);
-          shotTimer = setTimeout(() => {
-            playShotSound();
-            shotsInARow = 0;
-          }, 100);
-        }
+      } else if (canRunAndShoot) {
+        this.state = "runAndShoot";
+        // Não reseta frame — deixa a animação fluir
       }
-    } else {
-      fireButtonPressedAt = 0;
-      if (isRapidFiring) {
-        sounds.rapidFire.pause();
-        sounds.rapidFire.currentTime = 0;
-        isRapidFiring = false;
+
+      // ⏱️ Garante intervalo de tiro correto
+      this.shootUntil = now + 300;
+
+      // 🔊 Sons
+      if (!isRapidFiring) {
+        shotsInARow++;
+        clearTimeout(shotTimer);
+        shotTimer = setTimeout(() => {
+          playShotSound();
+          shotsInARow = 0;
+        }, 100);
       }
     }
+  } else {
+    // 🔇 Solta o botão — para o rapid fire
+    fireButtonPressedAt = 0;
+    if (isRapidFiring) {
+      sounds.rapidFire.pause();
+      sounds.rapidFire.currentTime = 0;
+      isRapidFiring = false;
+    }
   }
+}
 
   startTurn(dir) {
     this.state = "turn";
