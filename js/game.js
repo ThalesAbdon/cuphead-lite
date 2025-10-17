@@ -337,6 +337,13 @@ class Bullet extends Entity {
   }
 
   draw(ctx) {
+  ctx.save();
+
+  if (this.speed < 0) {
+    ctx.translate(this.x - this.offsetX + this.w, this.y - this.offsetY);
+    ctx.scale(-1, 1);
+    ctx.drawImage(this.image, 0, 0, this.w, this.h);
+  } else {
     ctx.drawImage(
       this.image,
       this.x - this.offsetX,
@@ -345,6 +352,9 @@ class Bullet extends Entity {
       this.h
     );
   }
+
+  ctx.restore();
+}
 }
 
 // ---------- GAME LOOP ----------
