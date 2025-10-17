@@ -26,66 +26,66 @@ const sounds = {
 
 const sprites = {
   playerIdle: await loadImages([
-    "assets/sprites/idle/cuphead_idle_0001.png",
-    "assets/sprites/idle/cuphead_idle_0002.png",
-    "assets/sprites/idle/cuphead_idle_0003.png",
-    "assets/sprites/idle/cuphead_idle_0004.png",
-    "assets/sprites/idle/cuphead_idle_0005.png",
+    "assets/sprites/player/idle/cuphead_idle_0001.png",
+    "assets/sprites/player/idle/cuphead_idle_0002.png",
+    "assets/sprites/player/idle/cuphead_idle_0003.png",
+    "assets/sprites/player/idle/cuphead_idle_0004.png",
+    "assets/sprites/player/idle/cuphead_idle_0005.png",
   ]),
   playerRun: await loadImages([
-    "assets/sprites/run/cuphead_run_0001.png",
-    "assets/sprites/run/cuphead_run_0002.png",
-    "assets/sprites/run/cuphead_run_0003.png",
-    "assets/sprites/run/cuphead_run_0004.png",
-    "assets/sprites/run/cuphead_run_0005.png",
-    "assets/sprites/run/cuphead_run_0006.png",
-    "assets/sprites/run/cuphead_run_0007.png",
-    "assets/sprites/run/cuphead_run_0008.png",
-    "assets/sprites/run/cuphead_run_0009.png",
-    "assets/sprites/run/cuphead_run_0010.png",
-    "assets/sprites/run/cuphead_run_0011.png",
-    "assets/sprites/run/cuphead_run_0012.png",
-    "assets/sprites/run/cuphead_run_0013.png",
-    "assets/sprites/run/cuphead_run_0014.png",
-    "assets/sprites/run/cuphead_run_0015.png",
-    "assets/sprites/run/cuphead_run_0016.png",
+    "assets/sprites/player/run/cuphead_run_0001.png",
+    "assets/sprites/player/run/cuphead_run_0002.png",
+    "assets/sprites/player/run/cuphead_run_0003.png",
+    "assets/sprites/player/run/cuphead_run_0004.png",
+    "assets/sprites/player/run/cuphead_run_0005.png",
+    "assets/sprites/player/run/cuphead_run_0006.png",
+    "assets/sprites/player/run/cuphead_run_0007.png",
+    "assets/sprites/player/run/cuphead_run_0008.png",
+    "assets/sprites/player/run/cuphead_run_0009.png",
+    "assets/sprites/player/run/cuphead_run_0010.png",
+    "assets/sprites/player/run/cuphead_run_0011.png",
+    "assets/sprites/player/run/cuphead_run_0012.png",
+    "assets/sprites/player/run/cuphead_run_0013.png",
+    "assets/sprites/player/run/cuphead_run_0014.png",
+    "assets/sprites/player/run/cuphead_run_0015.png",
+    "assets/sprites/player/run/cuphead_run_0016.png",
   ]),
   playerJump: await loadImages([
-    "assets/sprites/jump/cuphead_jump_0001.png",
-    "assets/sprites/jump/cuphead_jump_0002.png",
-    "assets/sprites/jump/cuphead_jump_0003.png",
-    "assets/sprites/jump/cuphead_jump_0004.png",
-    "assets/sprites/jump/cuphead_jump_0005.png",
-    "assets/sprites/jump/cuphead_jump_0006.png",
-    "assets/sprites/jump/cuphead_jump_0007.png",
-    "assets/sprites/jump/cuphead_jump_0008.png",
+    "assets/sprites/player/jump/cuphead_jump_0001.png",
+    "assets/sprites/player/jump/cuphead_jump_0002.png",
+    "assets/sprites/player/jump/cuphead_jump_0003.png",
+    "assets/sprites/player/jump/cuphead_jump_0004.png",
+    "assets/sprites/player/jump/cuphead_jump_0005.png",
+    "assets/sprites/player/jump/cuphead_jump_0006.png",
+    "assets/sprites/player/jump/cuphead_jump_0007.png",
+    "assets/sprites/player/jump/cuphead_jump_0008.png",
   ]),
   playerTurn: await loadImages([
-    "assets/sprites/run/cuphead_run_turnaround_0001.png",
-    "assets/sprites/run/cuphead_run_turnaround_0002.png",
+    "assets/sprites/player/run/cuphead_run_turnaround_0001.png",
+    "assets/sprites/player/run/cuphead_run_turnaround_0002.png",
   ]),
   playerShoot: await loadImages([
-    "assets/sprites/shoot/straight/cuphead_shoot_straight_0001.png",
-    "assets/sprites/shoot/straight/cuphead_shoot_straight_0002.png",
-    "assets/sprites/shoot/straight/cuphead_shoot_straight_0003.png",
+    "assets/sprites/player/shoot/straight/cuphead_shoot_straight_0001.png",
+    "assets/sprites/player/shoot/straight/cuphead_shoot_straight_0002.png",
+    "assets/sprites/player/shoot/straight/cuphead_shoot_straight_0003.png",
   ]),
   playerRunShoot: await loadImages([
-    "assets/sprites/shoot/run/cuphead_run_shoot_0001.png",
-    "assets/sprites/shoot/run/cuphead_run_shoot_0002.png",
-    "assets/sprites/shoot/run/cuphead_run_shoot_0003.png",
-    "assets/sprites/shoot/run/cuphead_run_shoot_0004.png",
-    "assets/sprites/shoot/run/cuphead_run_shoot_0005.png",
-    "assets/sprites/shoot/run/cuphead_run_shoot_0006.png",
-    "assets/sprites/shoot/run/cuphead_run_shoot_0007.png",
-    "assets/sprites/shoot/run/cuphead_run_shoot_0008.png",
-    "assets/sprites/shoot/run/cuphead_run_shoot_0009.png",
-    "assets/sprites/shoot/run/cuphead_run_shoot_0010.png",
-    "assets/sprites/shoot/run/cuphead_run_shoot_0011.png",
-    "assets/sprites/shoot/run/cuphead_run_shoot_0012.png",
-    "assets/sprites/shoot/run/cuphead_run_shoot_0013.png",
-    "assets/sprites/shoot/run/cuphead_run_shoot_0014.png",
-    "assets/sprites/shoot/run/cuphead_run_shoot_0015.png",
-    "assets/sprites/shoot/run/cuphead_run_shoot_0016.png",
+    "assets/sprites/player/shoot/run/cuphead_run_shoot_0001.png",
+    "assets/sprites/player/shoot/run/cuphead_run_shoot_0002.png",
+    "assets/sprites/player/shoot/run/cuphead_run_shoot_0003.png",
+    "assets/sprites/player/shoot/run/cuphead_run_shoot_0004.png",
+    "assets/sprites/player/shoot/run/cuphead_run_shoot_0005.png",
+    "assets/sprites/player/shoot/run/cuphead_run_shoot_0006.png",
+    "assets/sprites/player/shoot/run/cuphead_run_shoot_0007.png",
+    "assets/sprites/player/shoot/run/cuphead_run_shoot_0008.png",
+    "assets/sprites/player/shoot/run/cuphead_run_shoot_0009.png",
+    "assets/sprites/player/shoot/run/cuphead_run_shoot_0010.png",
+    "assets/sprites/player/shoot/run/cuphead_run_shoot_0011.png",
+    "assets/sprites/player/shoot/run/cuphead_run_shoot_0012.png",
+    "assets/sprites/player/shoot/run/cuphead_run_shoot_0013.png",
+    "assets/sprites/player/shoot/run/cuphead_run_shoot_0014.png",
+    "assets/sprites/player/shoot/run/cuphead_run_shoot_0015.png",
+    "assets/sprites/player/shoot/run/cuphead_run_shoot_0016.png",
   ]),
   bulletSpawn: [
     { x: 3, y: 3, w: 60, h: 69, offsetX: 20, offsetY: 28 },
@@ -110,6 +110,13 @@ const sprites = {
     { x: 192, y: 34, w: 64, h: 64 },
   ],
   peashooterSheet: await loadImage("assets/sprites/peashooter.png"),
+    enemyIdle: await loadImages([
+    "assets/sprites/enemy/lg_slime_idle_0001.png",
+    "assets/sprites/enemy/lg_slime_idle_0002.png",
+    "assets/sprites/enemy/lg_slime_idle_0003.png",
+    "assets/sprites/enemy/lg_slime_idle_0004.png",
+    "assets/sprites/enemy/lg_slime_idle_0005.png",
+  ]),
 };
 
 const bgLayers = [
@@ -231,7 +238,25 @@ case "runAndShoot":
 
       case "shoot":
         this.sx = 0;
+
+        // Se o jogador começou a andar enquanto segura Z:
+        if ((left ^ right) && input.pressed("KeyZ")) {
+          this.state = "runAndShoot";   // muda para correr + atirar
+          // NÃO reseta this.frame aqui (deixa a animação fluir)
+          break;
+        }
+
+        // Se começou a andar mas NÃO está segurando Z: apenas corre
+        if ((left ^ right) && !input.pressed("KeyZ")) {
+          this.state = "run";
+          this.frame = 0;               // ok resetar quando volta pra corrida normal
+          break;
+        }
+
+        // Continua o tiro parado normalmente
         this.animate(sprites.playerShoot, this.delayShoot);
+
+        // Tempo do tiro parado acabou → volta pro idle
         if (performance.now() > this.shootUntil) {
           this.state = "idle";
           this.frame = 0;
@@ -335,6 +360,70 @@ handleShooting() {
   }
 }
 
+// ---------- ENEMY ----------
+class Enemy extends Entity {
+  constructor(x) {
+    const base = sprites.enemyIdle[0];
+    // Escala confortável mantendo proporção
+    const desiredH = 256;
+    const scale = desiredH / base.height;
+    const w = Math.round(base.width * scale);
+    const h = Math.round(base.height * scale);
+    // começa no chão
+    super(x, GROUND_Y - h, w, h, base);
+
+    this.scale = scale;
+    this.delayIdle = 80;     // velocidade da animação
+    this.frame = 0;
+    this.nextFrameAt = 0;
+    this.hp = 25;
+    this.alive = true;
+    this.facing = -1;        // -1 olha pra esquerda, 1 direita
+  }
+
+  animate(seq, delay) {
+    const now = performance.now();
+    if (now >= this.nextFrameAt) {
+      this.frame = (this.frame + 1) % seq.length;
+      this.image = seq[this.frame];
+      this.nextFrameAt = now + delay;
+    }
+  }
+
+  hit(dmg = 1) {
+    if (!this.alive) return;
+    this.hp -= dmg;
+    if (this.hp <= 0) {
+      this.alive = false;
+    }
+  }
+
+  update(dt, player) {
+    if (!this.alive) return;
+    // olha pro player
+    this.facing = player.x + player.w / 2 < this.x + this.w / 2 ? -1 : 1;
+    // animação idle
+    this.animate(sprites.enemyIdle, this.delayIdle);
+    // mantém no chão se a janela redimensionar
+    this.y = GROUND_Y - this.h;
+  }
+
+  draw(ctx) {
+    if (!this.alive) return;
+    ctx.save();
+    if (this.facing === -1) {
+      // desenha normal
+      ctx.drawImage(this.image, this.x, this.y, this.w, this.h);
+    } else {
+      // espelha pra olhar à direita
+      ctx.translate(this.x + this.w, this.y);
+      ctx.scale(-1, 1);
+      ctx.drawImage(this.image, 0, 0, this.w, this.h);
+    }
+    ctx.restore();
+  }
+}
+
 // ---------- BULLET ----------
 class Bullet extends Entity {
   constructor(x, y, direction = 1) {
@@ -411,13 +500,24 @@ class Bullet extends Entity {
 // ---------- GAME LOOP ----------
 const player = new Player();
 const bullets = [];
+const enemies = [
+  new Enemy(720),   // posicione como quiser
+  // new Enemy(980),
+];
 let last = 0;
 
 function loop(t) {
   const dt = (t - last) / 1000;
   last = t;
   player.update(dt);
+  enemies.forEach(e => e.update(dt, player));
   bullets.forEach((b) => b.update(dt));
+  handleBulletEnemyCollisions();
+   for (let i = bullets.length - 1; i >= 0; i--) {
+    if (bullets[i].x < -200 || bullets[i].x > canvas.width + 200) {
+      bullets.splice(i, 1);
+    }
+  }
   render();
   requestAnimationFrame(loop);
 }
@@ -428,6 +528,8 @@ function render() {
   bgLayers.forEach((l) =>
     ctx.drawImage(l.img, 0, 0, canvas.width, canvas.height)
   );
+  
+  enemies.forEach(e => e.draw(ctx)); 
   player.draw(ctx);
   bullets.forEach((b) => b.draw(ctx));
 }
@@ -475,4 +577,36 @@ function playShotSound() {
     sounds.rapidFire.currentTime = 0;
     sounds.rapidFire.play();
   }
+}
+
+function handleBulletEnemyCollisions() {
+  for (let i = bullets.length - 1; i >= 0; i--) {
+    const b = bullets[i];
+    // bounding box aproximada da bala
+    const bx = b.x - b.offsetX;
+    const by = b.y - b.offsetY;
+    const bw = b.w;
+    const bh = b.h;
+
+    for (let j = 0; j < enemies.length; j++) {
+      const e = enemies[j];
+      if (!e.alive) continue;
+
+      if (aabb(bx, by, bw, bh, e.x, e.y, e.w, e.h)) {
+        e.hit(1);
+        // remove a bala ao acertar
+        bullets.splice(i, 1);
+        break;
+      }
+    }
+  }
+}
+
+function aabb(x1, y1, w1, h1, x2, y2, w2, h2) {
+  return (
+    x1 < x2 + w2 &&
+    x1 + w1 > x2 &&
+    y1 < y2 + h2 &&
+    y1 + h1 > y2
+  );
 }
