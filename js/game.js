@@ -16,6 +16,10 @@ let isRapidFiring = false;
 let lastShot = 0;
 let shotsInARow = 0;
 let shotTimer = null;
+let gameOver = false;
+let deathFrame = 0;
+let deathNextAt = 0;
+let showGameOver = false;
 
 // ---------- LOAD ASSETS ----------
 const sounds = {
@@ -23,6 +27,9 @@ const sounds = {
   twoBullets: createAudio("assets/audio/two bullets.mp3"),
   rapidFire: createAudio("assets/audio/rapid fire.mp3"),
 };
+
+const hpSheet = await loadImage("assets/sprites/ui/hp.png");
+const gameOverImg = await loadImage("assets/sprites/ui/gameover.png");
 
 const sprites = {
   playerIdle: await loadImages([
@@ -87,6 +94,40 @@ const sprites = {
     "assets/sprites/player/shoot/run/cuphead_run_shoot_0015.png",
     "assets/sprites/player/shoot/run/cuphead_run_shoot_0016.png",
   ]),
+  playerHit: await loadImages([
+    "assets/sprites/player/hit/Ground/cuphead_hit_0001.png",
+    "assets/sprites/player/hit/Ground/cuphead_hit_0002.png",
+    "assets/sprites/player/hit/Ground/cuphead_hit_0003.png",
+    "assets/sprites/player/hit/Ground/cuphead_hit_0004.png",
+    "assets/sprites/player/hit/Ground/cuphead_hit_0005.png",
+    "assets/sprites/player/hit/Ground/cuphead_hit_0006.png",
+  ]),
+  playerHitAir: await loadImages([
+    "assets/sprites/player/hit/Air/cuphead_hit_air_0001.png",
+    "assets/sprites/player/hit/Air/cuphead_hit_air_0002.png",
+    "assets/sprites/player/hit/Air/cuphead_hit_air_0003.png",
+    "assets/sprites/player/hit/Air/cuphead_hit_air_0004.png",
+    "assets/sprites/player/hit/Air/cuphead_hit_air_0005.png",
+    "assets/sprites/player/hit/Air/cuphead_hit_air_0006.png",
+  ]),
+  playerDeath: await loadImages([
+    "assets/sprites/player/death/cuphead_death_body_0001.png",
+    "assets/sprites/player/death/cuphead_death_body_0002.png",
+    "assets/sprites/player/death/cuphead_death_body_0003.png",
+    "assets/sprites/player/death/cuphead_death_body_0004.png",
+    "assets/sprites/player/death/cuphead_death_body_0005.png",
+    "assets/sprites/player/death/cuphead_death_body_0006.png",
+    "assets/sprites/player/death/cuphead_death_body_0007.png",
+    "assets/sprites/player/death/cuphead_death_body_0008.png",
+    "assets/sprites/player/death/cuphead_death_body_0009.png",
+    "assets/sprites/player/death/cuphead_death_body_0010.png",
+    "assets/sprites/player/death/cuphead_death_body_0011.png",
+    "assets/sprites/player/death/cuphead_death_body_0012.png",
+    "assets/sprites/player/death/cuphead_death_body_0013.png",
+    "assets/sprites/player/death/cuphead_death_body_0014.png",
+    "assets/sprites/player/death/cuphead_death_body_0015.png",
+    "assets/sprites/player/death/cuphead_death_body_0016.png",
+  ]),
   bulletSpawn: [
     { x: 3, y: 3, w: 60, h: 69, offsetX: 20, offsetY: 28 },
     { x: 68, y: 3, w: 65, h: 78, offsetX: 30, offsetY: 34 },
@@ -110,18 +151,126 @@ const sprites = {
     { x: 192, y: 34, w: 64, h: 64 },
   ],
   peashooterSheet: await loadImage("assets/sprites/peashooter.png"),
-    enemyIdle: await loadImages([
-    "assets/sprites/enemy/lg_slime_idle_0001.png",
-    "assets/sprites/enemy/lg_slime_idle_0002.png",
-    "assets/sprites/enemy/lg_slime_idle_0003.png",
-    "assets/sprites/enemy/lg_slime_idle_0004.png",
-    "assets/sprites/enemy/lg_slime_idle_0005.png",
+  enemyIdle: await loadImages([
+    "assets/sprites/enemy/idle/lg_slime_idle_0001.png",
+    "assets/sprites/enemy/idle/lg_slime_idle_0002.png",
+    "assets/sprites/enemy/idle/lg_slime_idle_0003.png",
+    "assets/sprites/enemy/idle/lg_slime_idle_0004.png",
+    "assets/sprites/enemy/idle/lg_slime_idle_0005.png",
+  ]),
+  enemyAirUp: await loadImages([
+    "assets/sprites/enemy/Air Up/slime_air_up_0001.png",
+    "assets/sprites/enemy/Air Up/slime_air_up_0002.png",
+    "assets/sprites/enemy/Air Up/slime_air_up_0003.png",
+  ]),
+  enemyAirDown: await loadImages([
+    "assets/sprites/enemy/Air Down/slime_air_down_0001.png",
+    "assets/sprites/enemy/Air Down/slime_air_down_0002.png",
+    "assets/sprites/enemy/Air Down/slime_air_down_0003.png",
+  ]),
+  enemyPunch: await loadImages([
+    "assets/sprites/enemy/Punch/slime_punch_0001.png",
+    "assets/sprites/enemy/Punch/slime_punch_0002.png",
+    "assets/sprites/enemy/Punch/slime_punch_0003.png",
+    "assets/sprites/enemy/Punch/slime_punch_0004.png",
+    "assets/sprites/enemy/Punch/slime_punch_0005.png",
+    "assets/sprites/enemy/Punch/slime_punch_0006.png",
+    "assets/sprites/enemy/Punch/slime_punch_0007.png",
+    "assets/sprites/enemy/Punch/slime_punch_0008.png",
+    "assets/sprites/enemy/Punch/slime_punch_0009.png",
+    "assets/sprites/enemy/Punch/slime_punch_0010.png",
+    "assets/sprites/enemy/Punch/slime_punch_0011.png",
+    "assets/sprites/enemy/Punch/slime_punch_0012.png",
+    "assets/sprites/enemy/Punch/slime_punch_0013.png",
+    "assets/sprites/enemy/Punch/slime_punch_0014.png",
+    "assets/sprites/enemy/Punch/slime_punch_0015.png",
+    "assets/sprites/enemy/Punch/slime_punch_0016.png",
   ]),
 };
 
 const bgLayers = [
   { img: await loadImage("assets/bg/boss-background.png"), x: 0, speed: 0 },
 ];
+
+// ---------- HUD ----------
+const CARD_W = Math.round(478 / 6);
+const CARD_H = 34;
+
+function getHpCardIndex(hp) {
+  if (hp <= 0) return 0;
+  if (hp === 1) return 3;
+  if (hp === 2) return 4;
+  return 5;
+}
+
+function drawHUD() {
+  const idx = getHpCardIndex(player.hp);
+  const scale = 1.5;
+  const dw = Math.round(CARD_W * scale);
+  const dh = Math.round(CARD_H * scale);
+  const margin = 16;
+  ctx.drawImage(
+    hpSheet,
+    idx * CARD_W, 0, CARD_W, CARD_H,
+    margin, canvas.height - dh - margin, dw, dh
+  );
+}
+
+// ---------- GAME OVER ----------
+function triggerGameOver() {
+  gameOver = true;
+  deathFrame = 0;
+  deathNextAt = performance.now();
+  showGameOver = false;
+  if (isRapidFiring) {
+    sounds.rapidFire.pause();
+    sounds.rapidFire.currentTime = 0;
+    isRapidFiring = false;
+  }
+}
+
+function updateGameOver() {
+  const now = performance.now();
+  if (!showGameOver && now >= deathNextAt) {
+    if (deathFrame < sprites.playerDeath.length) {
+      player.image = sprites.playerDeath[deathFrame];
+      deathFrame++;
+      deathNextAt = now + 70;
+    } else {
+      showGameOver = true;
+    }
+  }
+}
+
+function drawGameOver() {
+  ctx.save();
+  if (player.facing === -1) {
+    ctx.translate(player.x + player.w, player.y);
+    ctx.scale(-1, 1);
+    ctx.drawImage(player.image, 0, 0, player.w, player.h);
+  } else {
+    ctx.drawImage(player.image, player.x, player.y, player.w, player.h);
+  }
+  ctx.restore();
+
+  if (showGameOver) {
+    ctx.fillStyle = "rgba(0,0,0,0.5)";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    const frameW = Math.round(3238 / 3);
+    const frameH = Math.round(1646 / 7);
+    const inset = 6; 
+    const gw = Math.min(canvas.width * 0.5, 540);
+    const gh = gw * ((frameH - inset * 2) / (frameW - inset * 2));
+    ctx.drawImage(
+      gameOverImg,
+      inset, inset, frameW - inset * 2, frameH - inset * 2,
+      canvas.width / 2 - gw / 2,
+      canvas.height / 2 - gh / 2,
+      gw, gh
+    );
+  }
+}
 
 // ---------- PLAYER ----------
 class Player extends Entity {
@@ -135,13 +284,39 @@ class Player extends Entity {
     this.delayRun = 30;
     this.delayTurn = 80;
     this.delayShoot = 40;
-    this.frame = 0;
     this.delayJump = 75;
+    this.delayHit = 60;
+    this.frame = 0;
     this.nextFrameAt = 0;
     this.state = "idle";
     this.facing = 1;
     this.turnFrom = 0;
     this.shootUntil = 0;
+    this.hp = 3;
+    this.invincibleUntil = 0;
+  }
+
+  isInvincible() {
+    return performance.now() < this.invincibleUntil;
+  }
+
+  takeHit(fromX) {
+    if (this.isInvincible()) return;
+    this.hp--;
+
+    if (this.hp <= 0) {
+      triggerGameOver();
+      return;
+    }
+
+    this.invincibleUntil = performance.now() + 2000;
+    const dir = this.x + this.w / 2 < fromX ? -1 : 1;
+    this.sx = dir * 400;
+    this.sy = -500;
+    this.grounded = false;
+    this.state = "hit";
+    this.frame = 0;
+    this.nextFrameAt = 0;
   }
 
   animate(seq, delay, stayLast = false) {
@@ -156,124 +331,90 @@ class Player extends Entity {
   }
 
   update(dt) {
-    const speed = 200,
-      jump = -750,
-      gravity = 1500;
+    const speed = 300, jump = -750, gravity = 1500;
     const left = input.pressed("ArrowLeft");
     const right = input.pressed("ArrowRight");
     const both = left && right;
 
-    if ((this.state === "run" || this.state === "runAndShoot") && this.turnFrom === 0 && !both) {
-      if (left && this.facing === 1) this.startTurn(1);
-      if (right && this.facing === -1) this.startTurn(-1);
-    }
+    if (this.state !== "hit") {
+      if ((this.state === "run" || this.state === "runAndShoot") && this.turnFrom === 0 && !both) {
+        if (left && this.facing === 1) this.startTurn(1);
+        if (right && this.facing === -1) this.startTurn(-1);
+      }
 
-    switch (this.state) {
-      case "idle":
-        if (left ^ right) {
-          this.state = "run";
-          this.frame = 0;
-        } else {
+      switch (this.state) {
+        case "idle":
+          if (left ^ right) { this.state = "run"; this.frame = 0; }
+          else { this.sx = 0; this.animate(sprites.playerIdle, this.delayIdle); }
+          break;
+
+        case "jump":
+          this.sx = (left ? -1 : right ? 1 : 0) * speed;
+          if (this.sy < 0) this.animate(sprites.playerJump.slice(0, 4), this.delayJump);
+          else this.animate(sprites.playerJump.slice(4, 8), this.delayJump);
+          if (this.grounded) { this.state = "idle"; this.frame = 0; }
+          break;
+
+        case "run":
+          if (!(left ^ right) || both) { this.state = "idle"; this.frame = 0; break; }
+          if (input.pressed("KeyZ")) { this.state = "runAndShoot"; this.frame = 0; break; }
+          this.sx = (left ? -1 : 1) * speed;
+          this.facing = left ? -1 : 1;
+          this.animate(sprites.playerRun, this.delayRun);
+          break;
+
+        case "runAndShoot":
+          if (!(left ^ right) || both || !input.pressed("KeyZ")) { this.state = "run"; this.frame = 0; break; }
+          this.sx = (left ? -1 : 1) * speed;
+          this.facing = left ? -1 : 1;
+          this.animate(sprites.playerRunShoot, this.delayShoot);
+          break;
+
+        case "turn":
           this.sx = 0;
-          this.animate(sprites.playerIdle, this.delayIdle);
-        }
-        break;
-
-      case "jump":
-        this.sx = (left ? -1 : right ? 1 : 0) * speed;
-        if (this.sy < 0) {
-          // Está subindo
-          this.animate(sprites.playerJump.slice(0, 4), this.delayJump);
-        } else {
-          // Está caindo
-          this.animate(sprites.playerJump.slice(4, 8), this.delayJump);
-        }
-        if (this.grounded) {
-          this.state = "idle";
-          this.frame = 0;
-        }
-        break;
-
-      case "run":
-  if (!(left ^ right) || both) {
-    this.state = "idle";
-    this.frame = 0;
-    break;
-  }
-  if (input.pressed("KeyZ")) {
-    this.state = "runAndShoot";
-    this.frame = 0;
-    break;
-  }
-
-  this.sx = (left ? -1 : 1) * speed;
-  this.facing = left ? -1 : 1;
-  this.animate(sprites.playerRun, this.delayRun);
-  break;
-
-case "runAndShoot":
-  if (!(left ^ right) || both || !input.pressed("KeyZ")) {
-    this.state = "run";
-    this.frame = 0;
-    break;
-  }
-
-  this.sx = (left ? -1 : 1) * speed;
-  this.facing = left ? -1 : 1;
-  this.animate(sprites.playerRunShoot, this.delayShoot);
-  break;
-
-      case "turn":
-        this.sx = 0;
-        this.animate(sprites.playerTurn, this.delayTurn, true);
-        const oppositeHeld =
-          (this.turnFrom === 1 && left) || (this.turnFrom === -1 && right);
-        if (this.frame === sprites.playerTurn.length - 1 && oppositeHeld) {
-          this.facing *= -1;
-          this.state = "run";
-          this.frame = 0;
-          this.turnFrom = 0;
-        }
-        break;
-
-      case "shoot":
-        this.sx = 0;
-
-        // Se o jogador começou a andar enquanto segura Z:
-        if ((left ^ right) && input.pressed("KeyZ")) {
-          this.state = "runAndShoot";   // muda para correr + atirar
-          // NÃO reseta this.frame aqui (deixa a animação fluir)
+          this.animate(sprites.playerTurn, this.delayTurn, true);
+          const oppositeHeld = (this.turnFrom === 1 && left) || (this.turnFrom === -1 && right);
+          if (this.frame === sprites.playerTurn.length - 1 && oppositeHeld) {
+            this.facing *= -1;
+            this.state = "run";
+            this.frame = 0;
+            this.turnFrom = 0;
+          }
           break;
-        }
 
-        // Se começou a andar mas NÃO está segurando Z: apenas corre
-        if ((left ^ right) && !input.pressed("KeyZ")) {
-          this.state = "run";
-          this.frame = 0;               // ok resetar quando volta pra corrida normal
+        case "shoot":
+          this.sx = 0;
+          if ((left ^ right) && input.pressed("KeyZ")) { this.state = "runAndShoot"; break; }
+          if ((left ^ right) && !input.pressed("KeyZ")) { this.state = "run"; this.frame = 0; break; }
+          this.animate(sprites.playerShoot, this.delayShoot);
+          if (performance.now() > this.shootUntil) { this.state = "idle"; this.frame = 0; }
           break;
-        }
+      }
 
-        // Continua o tiro parado normalmente
-        this.animate(sprites.playerShoot, this.delayShoot);
+      if (this.grounded && input.pressed("Space")) {
+        this.sy = jump;
+        this.grounded = false;
+        this.state = "jump";
+        this.frame = 0;
+      }
 
-        // Tempo do tiro parado acabou → volta pro idle
-        if (performance.now() > this.shootUntil) {
-          this.state = "idle";
-          this.frame = 0;
-        }
-        break;
-    }
-
-    if (this.grounded && input.pressed("Space")) {
-      this.sy = jump;
-      this.grounded = false;
-      this.state = "jump";
-      this.frame = 0;
+    } else {
+      const seq = this.grounded ? sprites.playerHit : sprites.playerHitAir;
+      this.animate(seq, this.delayHit, true);
+      this.sx *= 0.85;
+      if (this.frame === seq.length - 1) {
+        this.state = "idle";
+        this.frame = 0;
+        this.sx = 0;
+      }
     }
 
     this.sy += gravity * dt;
     this.x += this.sx * dt;
     this.y += this.sy * dt;
+
+    if (this.x < 0) this.x = 0;
+    if (this.x + this.w > canvas.width) this.x = canvas.width - this.w;
 
     if (this.y >= GROUND_Y - this.h) {
       this.y = GROUND_Y - this.h;
@@ -284,62 +425,53 @@ case "runAndShoot":
     this.handleShooting();
   }
 
-handleShooting() {
-  const isShooting = input.pressed("KeyZ");
-  const now = performance.now();
-
-  // Pode atirar parado, correndo ou correndo-atirando
-  const canRunAndShoot = this.state === "run" || this.state === "runAndShoot";
-  const canIdleShoot = this.state === "idle" || this.state === "shoot";
-
-  if (isShooting && (canRunAndShoot || canIdleShoot)) {
-    if (!fireButtonPressedAt) fireButtonPressedAt = now;
-
-    const holdTime = now - fireButtonPressedAt;
-    if (holdTime > 50 && !isRapidFiring) {
-      sounds.rapidFire.currentTime = 0;
-      sounds.rapidFire.loop = true;
-      sounds.rapidFire.play();
-      isRapidFiring = true;
+  handleShooting() {
+    if (this.state === "hit") {
+      fireButtonPressedAt = 0;
+      if (isRapidFiring) {
+        sounds.rapidFire.pause();
+        sounds.rapidFire.currentTime = 0;
+        isRapidFiring = false;
+      }
+      return;
     }
 
-    if (canShoot()) {
-      // 💥 Cria o projétil
-      const bulletX = this.facing === 1 ? this.x + this.w : this.x;
-      bullets.push(new Bullet(bulletX, this.y + this.h / 2 - 8, this.facing));
+    const isShooting = input.pressed("KeyZ");
+    const now = performance.now();
+    const canRunAndShoot = this.state === "run" || this.state === "runAndShoot";
+    const canIdleShoot = this.state === "idle" || this.state === "shoot";
 
-      // 🧠 Define o estado de animação corretamente
-      if (canIdleShoot) {
-        this.state = "shoot";
-        this.frame = 0;
-      } else if (canRunAndShoot) {
-        this.state = "runAndShoot";
-        // Não reseta frame — deixa a animação fluir
+    if (isShooting && (canRunAndShoot || canIdleShoot)) {
+      if (!fireButtonPressedAt) fireButtonPressedAt = now;
+      const holdTime = now - fireButtonPressedAt;
+      if (holdTime > 50 && !isRapidFiring) {
+        sounds.rapidFire.currentTime = 0;
+        sounds.rapidFire.loop = true;
+        sounds.rapidFire.play();
+        isRapidFiring = true;
       }
 
-      // ⏱️ Garante intervalo de tiro correto
-      this.shootUntil = now + 300;
-
-      // 🔊 Sons
-      if (!isRapidFiring) {
-        shotsInARow++;
-        clearTimeout(shotTimer);
-        shotTimer = setTimeout(() => {
-          playShotSound();
-          shotsInARow = 0;
-        }, 100);
+      if (canShoot()) {
+        const bulletX = this.facing === 1 ? this.x + this.w : this.x;
+        bullets.push(new Bullet(bulletX, this.y + this.h / 2 - 8, this.facing));
+        if (canIdleShoot) { this.state = "shoot"; this.frame = 0; }
+        else if (canRunAndShoot) { this.state = "runAndShoot"; }
+        this.shootUntil = now + 300;
+        if (!isRapidFiring) {
+          shotsInARow++;
+          clearTimeout(shotTimer);
+          shotTimer = setTimeout(() => { playShotSound(); shotsInARow = 0; }, 100);
+        }
       }
-    }
-  } else {
-    // 🔇 Solta o botão — para o rapid fire
-    fireButtonPressedAt = 0;
-    if (isRapidFiring) {
-      sounds.rapidFire.pause();
-      sounds.rapidFire.currentTime = 0;
-      isRapidFiring = false;
+    } else {
+      fireButtonPressedAt = 0;
+      if (isRapidFiring) {
+        sounds.rapidFire.pause();
+        sounds.rapidFire.currentTime = 0;
+        isRapidFiring = false;
+      }
     }
   }
-}
 
   startTurn(dir) {
     this.state = "turn";
@@ -348,6 +480,10 @@ handleShooting() {
   }
 
   draw(ctx) {
+    if (this.isInvincible()) {
+      const blink = Math.floor(performance.now() / 100) % 2 === 0;
+      if (!blink) return;
+    }
     ctx.save();
     if (this.facing === -1) {
       ctx.translate(this.x + this.w, this.y);
@@ -364,21 +500,34 @@ handleShooting() {
 class Enemy extends Entity {
   constructor(x) {
     const base = sprites.enemyIdle[0];
-    // Escala confortável mantendo proporção
     const desiredH = 256;
     const scale = desiredH / base.height;
     const w = Math.round(base.width * scale);
     const h = Math.round(base.height * scale);
-    // começa no chão
     super(x, GROUND_Y - h, w, h, base);
 
     this.scale = scale;
-    this.delayIdle = 80;     // velocidade da animação
+    this.baseW = w;
+    this.baseH = h;
+    this.delayIdle = 80;
     this.frame = 0;
     this.nextFrameAt = 0;
     this.hp = 25;
     this.alive = true;
-    this.facing = -1;        // -1 olha pra esquerda, 1 direita
+    this.facing = -1;
+    this.flashUntil = 0;
+
+    this.sy = 0;
+    this.sx = 0;
+    this.grounded = true;
+    this.jumpInterval = 1650;
+    this.nextJumpAt = performance.now() + this.jumpInterval;
+
+    this.jumpsLeft = 5;
+    this.state = "jumping";
+    this.punchFrame = 0;
+    this.punchNextAt = 0;
+    this.punchDone = false;
   }
 
   animate(seq, delay) {
@@ -393,32 +542,114 @@ class Enemy extends Entity {
   hit(dmg = 1) {
     if (!this.alive) return;
     this.hp -= dmg;
-    if (this.hp <= 0) {
-      this.alive = false;
+    this.flashUntil = performance.now() + 80;
+    if (this.hp <= 0) this.alive = false;
+  }
+
+  getPunchScale(f) {
+    const maxW = 2.2, maxH = 1.4;
+    let sw = 1, sh = 1;
+    if (f >= 3 && f <= 7) {
+      const t = (f - 3) / 4;
+      sw = 1 + t * (maxW - 1); sh = 1 + t * (maxH - 1);
+    } else if (f >= 8 && f <= 11) {
+      sw = maxW; sh = maxH;
+    } else if (f >= 12 && f <= 16) {
+      const t = (f - 12) / 4;
+      sw = maxW - t * (maxW - 1); sh = maxH - t * (maxH - 1);
     }
+    return { sw, sh };
   }
 
   update(dt, player) {
     if (!this.alive) return;
-    // olha pro player
+
+    const gravity = 1800, jumpForce = -1300, jumpSpeed = 230;
+    const now = performance.now();
+
     this.facing = player.x + player.w / 2 < this.x + this.w / 2 ? -1 : 1;
-    // animação idle
-    this.animate(sprites.enemyIdle, this.delayIdle);
-    // mantém no chão se a janela redimensionar
-    this.y = GROUND_Y - this.h;
+
+    if (this.state === "jumping") {
+      if (this.grounded && now >= this.nextJumpAt) {
+        if (this.jumpsLeft > 0) {
+          const toPlayer = player.x + player.w / 2 < this.x + this.w / 2 ? -1 : 1;
+          this.sx = toPlayer * jumpSpeed;
+          this.sy = jumpForce;
+          this.grounded = false;
+          this.nextJumpAt = now + this.jumpInterval;
+          this.jumpsLeft--;
+        } else {
+          this.state = "punch";
+          this.punchFrame = 0;
+          this.punchNextAt = now;
+          this.punchDone = false;
+        }
+      }
+
+      this.sy += gravity * dt;
+      this.x += this.sx * dt;
+      this.y += this.sy * dt;
+
+      if (this.x < 0) { this.x = 0; this.sx = 0; }
+      if (this.x + this.w > canvas.width) { this.x = canvas.width - this.w; this.sx = 0; }
+
+      if (this.y >= GROUND_Y - this.h) {
+        this.y = GROUND_Y - this.h;
+        this.sy = 0; this.sx = 0;
+        this.grounded = true;
+      }
+
+      if (this.grounded) this.animate(sprites.enemyIdle, this.delayIdle);
+      else if (this.sy < 0) this.animate(sprites.enemyAirUp, 60);
+      else this.animate(sprites.enemyAirDown, 60);
+
+    } else if (this.state === "punch") {
+      if (!this.punchDone && now >= this.punchNextAt) {
+        this.image = sprites.enemyPunch[this.punchFrame];
+        const { sw, sh } = this.getPunchScale(this.punchFrame);
+        this.w = Math.round(this.baseW * sw);
+        this.h = Math.round(this.baseH * sh);
+        this.y = GROUND_Y - this.h;
+        this.punchFrame++;
+        this.punchNextAt = now + 55;
+        if (this.punchFrame >= sprites.enemyPunch.length) this.punchDone = true;
+      }
+
+      if (this.punchDone) {
+        this.w = this.baseW; this.h = this.baseH;
+        this.y = GROUND_Y - this.h;
+        this.state = "jumping";
+        this.jumpsLeft = 5;
+        this.nextJumpAt = now + this.jumpInterval;
+        this.frame = 0;
+      }
+    }
   }
 
   draw(ctx) {
     if (!this.alive) return;
+
+    const flashing = performance.now() < this.flashUntil;
+    let img = this.image;
+
+    if (flashing) {
+      const tmp = document.createElement("canvas");
+      tmp.width = this.w; tmp.height = this.h;
+      const t = tmp.getContext("2d");
+      t.drawImage(this.image, 0, 0, this.w, this.h);
+      t.globalCompositeOperation = "source-atop";
+      t.fillStyle = "white";
+      t.fillRect(0, 0, this.w, this.h);
+      img = tmp;
+    }
+
     ctx.save();
     if (this.facing === -1) {
-      // desenha normal
-      ctx.drawImage(this.image, this.x, this.y, this.w, this.h);
+      ctx.drawImage(img, this.x, this.y, this.w, this.h);
     } else {
-      // espelha pra olhar à direita
       ctx.translate(this.x + this.w, this.y);
       ctx.scale(-1, 1);
-      ctx.drawImage(this.image, 0, 0, this.w, this.h);
+      ctx.drawImage(img, 0, 0, this.w, this.h);
     }
     ctx.restore();
   }
@@ -446,26 +677,21 @@ class Bullet extends Entity {
         : Math.min(this.frame + 1, seq.length - 1);
       const frameData = seq[this.frame];
       this.image = this.cropSprite(frameData);
-      this.w = frameData.w;
-      this.h = frameData.h;
+      this.w = frameData.w; this.h = frameData.h;
       this.offsetX = frameData.offsetX || 0;
       this.offsetY = frameData.offsetY || 0;
       this.nextFrameAt = now + delay;
-
       if (!loop && this.frame === seq.length - 1 && this.state === "spawn") {
-        this.state = "loop";
-        this.frame = -1;
+        this.state = "loop"; this.frame = -1;
       }
     }
   }
 
   cropSprite({ x, y, w, h }) {
-    const canvas = document.createElement("canvas");
-    canvas.width = w;
-    canvas.height = h;
-    const ctx = canvas.getContext("2d");
-    ctx.drawImage(sprites.peashooterSheet, x, y, w, h, 0, 0, w, h);
-    return canvas;
+    const c = document.createElement("canvas");
+    c.width = w; c.height = h;
+    c.getContext("2d").drawImage(sprites.peashooterSheet, x, y, w, h, 0, 0, w, h);
+    return c;
   }
 
   update(dt) {
@@ -477,47 +703,41 @@ class Bullet extends Entity {
   }
 
   draw(ctx) {
-  ctx.save();
-
-  if (this.speed < 0) {
-    ctx.translate(this.x - this.offsetX + this.w, this.y - this.offsetY);
-    ctx.scale(-1, 1);
-    ctx.drawImage(this.image, 0, 0, this.w, this.h);
-  } else {
-    ctx.drawImage(
-      this.image,
-      this.x - this.offsetX,
-      this.y - this.offsetY,
-      this.w,
-      this.h
-    );
+    ctx.save();
+    if (this.speed < 0) {
+      ctx.translate(this.x - this.offsetX + this.w, this.y - this.offsetY);
+      ctx.scale(-1, 1);
+      ctx.drawImage(this.image, 0, 0, this.w, this.h);
+    } else {
+      ctx.drawImage(this.image, this.x - this.offsetX, this.y - this.offsetY, this.w, this.h);
+    }
+    ctx.restore();
   }
-
-  ctx.restore();
-}
 }
 
 // ---------- GAME LOOP ----------
 const player = new Player();
 const bullets = [];
-const enemies = [
-  new Enemy(720),   // posicione como quiser
-  // new Enemy(980),
-];
+const enemies = [new Enemy(720)];
 let last = 0;
 
 function loop(t) {
   const dt = (t - last) / 1000;
   last = t;
-  player.update(dt);
-  enemies.forEach(e => e.update(dt, player));
-  bullets.forEach((b) => b.update(dt));
-  handleBulletEnemyCollisions();
-   for (let i = bullets.length - 1; i >= 0; i--) {
-    if (bullets[i].x < -200 || bullets[i].x > canvas.width + 200) {
-      bullets.splice(i, 1);
+
+  if (!gameOver) {
+    player.update(dt);
+    enemies.forEach(e => e.update(dt, player));
+    bullets.forEach(b => b.update(dt));
+    handleBulletEnemyCollisions();
+    handlePlayerEnemyCollisions();
+    for (let i = bullets.length - 1; i >= 0; i--) {
+      if (bullets[i].x < -200 || bullets[i].x > canvas.width + 200) bullets.splice(i, 1);
     }
+  } else {
+    updateGameOver();
   }
+
   render();
   requestAnimationFrame(loop);
 }
@@ -525,13 +745,19 @@ requestAnimationFrame(loop);
 
 function render() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  bgLayers.forEach((l) =>
-    ctx.drawImage(l.img, 0, 0, canvas.width, canvas.height)
-  );
-  
-  enemies.forEach(e => e.draw(ctx)); 
-  player.draw(ctx);
-  bullets.forEach((b) => b.draw(ctx));
+  bgLayers.forEach(l => ctx.drawImage(l.img, 0, 0, canvas.width, canvas.height));
+
+  if (!gameOver) {
+    enemies.forEach(e => e.draw(ctx));
+    player.draw(ctx);
+    bullets.forEach(b => b.draw(ctx));
+  } else {
+    enemies.forEach(e => e.draw(ctx));
+    bullets.forEach(b => b.draw(ctx));
+    drawGameOver();
+  }
+
+  drawHUD();
 }
 
 // ---------- UTIL ----------
@@ -542,14 +768,14 @@ function resize() {
 }
 
 function createAudio(src) {
-  const audio = new Audio(src);
-  audio.preload = "auto";
-  audio.load();
-  return audio;
+  const a = new Audio(src);
+  a.preload = "auto";
+  a.load();
+  return a;
 }
 
 function loadImage(src) {
-  return new Promise((res) => {
+  return new Promise(res => {
     const img = new Image();
     img.src = src;
     img.onload = () => res(img);
@@ -562,39 +788,24 @@ function loadImages(srcArray) {
 
 function canShoot() {
   const now = performance.now();
-  if (now - lastShot > 150) {
-    lastShot = now;
-    return true;
-  }
+  if (now - lastShot > 150) { lastShot = now; return true; }
   return false;
 }
 
 function playShotSound() {
-  if (shotsInARow === 1) {
-    sounds.oneShoot.currentTime = 0;
-    sounds.oneShoot.play();
-  } else if (shotsInARow > 1) {
-    sounds.rapidFire.currentTime = 0;
-    sounds.rapidFire.play();
-  }
+  if (shotsInARow === 1) { sounds.oneShoot.currentTime = 0; sounds.oneShoot.play(); }
+  else if (shotsInARow > 1) { sounds.rapidFire.currentTime = 0; sounds.rapidFire.play(); }
 }
 
 function handleBulletEnemyCollisions() {
   for (let i = bullets.length - 1; i >= 0; i--) {
     const b = bullets[i];
-    // bounding box aproximada da bala
-    const bx = b.x - b.offsetX;
-    const by = b.y - b.offsetY;
-    const bw = b.w;
-    const bh = b.h;
-
+    const bx = b.x - b.offsetX, by = b.y - b.offsetY;
     for (let j = 0; j < enemies.length; j++) {
       const e = enemies[j];
       if (!e.alive) continue;
-
-      if (aabb(bx, by, bw, bh, e.x, e.y, e.w, e.h)) {
+      if (aabb(bx, by, b.w, b.h, e.x, e.y, e.w, e.h)) {
         e.hit(1);
-        // remove a bala ao acertar
         bullets.splice(i, 1);
         break;
       }
@@ -602,11 +813,15 @@ function handleBulletEnemyCollisions() {
   }
 }
 
+function handlePlayerEnemyCollisions() {
+  enemies.forEach(e => {
+    if (!e.alive) return;
+    if (aabb(player.x, player.y, player.w, player.h, e.x, e.y, e.w, e.h)) {
+      player.takeHit(e.x + e.w / 2);
+    }
+  });
+}
+
 function aabb(x1, y1, w1, h1, x2, y2, w2, h2) {
-  return (
-    x1 < x2 + w2 &&
-    x1 + w1 > x2 &&
-    y1 < y2 + h2 &&
-    y1 + h1 > y2
-  );
+  return x1 < x2 + w2 && x1 + w1 > x2 && y1 < y2 + h2 && y1 + h1 > y2;
 }
