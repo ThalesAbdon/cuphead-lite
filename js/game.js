@@ -62,6 +62,26 @@ const sprites = {
     "assets/sprites/player/run/cuphead_run_0015.png",
     "assets/sprites/player/run/cuphead_run_0016.png",
   ]),
+  playerDashGround: await loadImages([
+    "assets/sprites/player/dash/ground/cuphead_dash_0001.png",
+    "assets/sprites/player/dash/ground/cuphead_dash_0002.png",
+    "assets/sprites/player/dash/ground/cuphead_dash_0003.png",
+    "assets/sprites/player/dash/ground/cuphead_dash_0004.png",
+    "assets/sprites/player/dash/ground/cuphead_dash_0005.png",
+    "assets/sprites/player/dash/ground/cuphead_dash_0006.png",
+    "assets/sprites/player/dash/ground/cuphead_dash_0007.png",
+    "assets/sprites/player/dash/ground/cuphead_dash_0008.png",
+  ]),
+  playerDashAir: await loadImages([
+  "assets/sprites/player/dash/air/cuphead_dash_air_0001.png",
+  "assets/sprites/player/dash/air/cuphead_dash_air_0002.png",
+  "assets/sprites/player/dash/air/cuphead_dash_air_0003.png",
+  "assets/sprites/player/dash/air/cuphead_dash_air_0004.png",
+  "assets/sprites/player/dash/air/cuphead_dash_air_0005.png",
+  "assets/sprites/player/dash/air/cuphead_dash_air_0006.png",
+  "assets/sprites/player/dash/air/cuphead_dash_air_0007.png",
+  "assets/sprites/player/dash/air/cuphead_dash_air_0008.png",
+  ]),
   playerJump: await loadImages([
     "assets/sprites/player/jump/cuphead_jump_0001.png",
     "assets/sprites/player/jump/cuphead_jump_0002.png",
@@ -190,6 +210,11 @@ const sprites = {
     "assets/sprites/enemy/Punch/slime_punch_0014.png",
     "assets/sprites/enemy/Punch/slime_punch_0015.png",
     "assets/sprites/enemy/Punch/slime_punch_0016.png",
+  ]),
+  enemyFalling: await loadImages([
+  "assets/sprites/enemy/falling/lg_slime_falling_0001.png",
+  "assets/sprites/enemy/falling/lg_slime_falling_0002.png",
+  "assets/sprites/enemy/falling/lg_slime_falling_0003.png",
   ]),
   enemyDeath: await loadImages([
     "assets/sprites/enemy/death/lg_slime_death_0001.png",
@@ -334,6 +359,11 @@ class Player extends Entity {
     this.hp = 3;
     this.invincibleUntil = 0;
     this.grounded = true;
+    this.dashCooldown = 0;      
+    this.dashUntil = 0;         
+    this.dashSpeed = 900;       
+    this.dashDuration = 300;    
+    this.dashCooldownTime = 1000;
   }
 
   isInvincible() {
@@ -405,6 +435,25 @@ class Player extends Entity {
           if (this.grounded) { this.state = "idle"; this.frame = 0; }
           break;
 
+        case "dash":
+          this.animate(sprites.playerDashGround, 40);
+          this.sx = this.facing === 1 ? this.dashSpeed : -this.dashSpeed;
+          if (performance.now() > this.dashUntil) {
+            this.state = "idle";
+            this.frame = 0;
+            this.sx = 0;
+          }
+          break;
+        case "dashAir":
+          this.animate(sprites.playerDashAir, 40);
+          this.sx = this.facing === 1 ? this.dashSpeed : -this.dashSpeed;
+          this.sy = 0; 
+          if (performance.now() > this.dashUntil) {
+            this.state = "jump";
+            this.frame = 0;
+            this.sx = 0;
+          }
+          break;
         case "run":
           if (!(left ^ right) || both) { this.state = "idle"; this.frame = 0; break; }
           if (input.pressed("KeyZ")) { this.state = "runAndShoot"; this.frame = 0; break; }
@@ -439,6 +488,20 @@ class Player extends Entity {
           this.animate(sprites.playerShoot, this.delayShoot);
           if (performance.now() > this.shootUntil) { this.state = "idle"; this.frame = 0; }
           break;
+      }
+
+      if (this.grounded && input.pressed("KeyX") && performance.now() > this.dashCooldown) {
+        this.state = "dash";
+        this.frame = 0;
+        this.dashUntil = performance.now() + this.dashDuration;
+        this.dashCooldown = performance.now() + this.dashCooldownTime;
+      }
+
+      if (!this.grounded && this.state === "jump" && input.pressed("KeyX") && performance.now() > this.dashCooldown) {
+        this.state = "dashAir";
+        this.frame = 0;
+        this.dashUntil = performance.now() + this.dashDuration;
+        this.dashCooldown = performance.now() + this.dashCooldownTime;
       }
 
       if (this.grounded && input.pressed("Space")) {
@@ -476,7 +539,7 @@ class Player extends Entity {
   }
 
   handleShooting() {
-    if (this.state === "hit") {
+    if (this.state === "hit" || this.state === "dash") {
       fireButtonPressedAt = 0;
       if (isRapidFiring) {
         sounds.rapidFire.pause();
@@ -579,6 +642,9 @@ class Enemy extends Entity {
     this.punchNextAt = 0;
     this.punchDone = false;
 
+    this.falling = false;
+    this.fallingTriggered = false;
+
     this.dying = false;
     this.deathFrame = 0;
     this.deathNextAt = 0;
@@ -651,6 +717,22 @@ class Enemy extends Entity {
 
     this.facing = player.x + player.w / 2 < this.x + this.w / 2 ? -1 : 1;
 
+    if (this.falling) {
+      this.sy += 4000 * dt;
+      this.x += this.sx * dt;
+      this.y += this.sy * dt;
+      this.animate(sprites.enemyFalling, 80);
+
+      if (this.y >= GROUND_Y - this.h) {
+        this.y = GROUND_Y - this.h;
+        this.sy = 0; this.sx = 0;
+        this.grounded = true;
+        this.fallingTriggered = false
+        this.falling = false;
+      }
+      return;
+    }
+
     if (this.state === "jumping") {
       if (this.grounded && now >= this.nextJumpAt) {
         if (this.jumpsLeft > 0) {
@@ -671,6 +753,16 @@ class Enemy extends Entity {
       this.sy += gravity * dt;
       this.x += this.sx * dt;
       this.y += this.sy * dt;
+
+      if (!this.grounded && !this.fallingTriggered && this.sy > 0 && this.sy < 50) {
+        const distX = Math.abs((this.x + this.w / 2) - (player.x + player.w / 2));
+        if (distX < 150 && Math.random() < 0.1) {
+          this.falling = true;
+          this.fallingTriggered = true;
+          this.x = player.x + player.w / 2 - this.w / 2;
+          this.sx = 0;
+        }
+      }
 
       if (this.x < 0) { this.x = 0; this.sx = 0; }
       if (this.x + this.w > canvas.width) { this.x = canvas.width - this.w; this.sx = 0; }
@@ -801,7 +893,7 @@ class Bullet extends Entity {
 // ---------- GAME LOOP ----------
 const player = new Player();
 const bullets = [];
-const enemies = [new Enemy(720)];
+const enemies = [new Enemy(1640)];
 let last = 0;
 
 function loop(t) {
