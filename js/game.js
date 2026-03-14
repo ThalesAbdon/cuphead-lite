@@ -20,6 +20,10 @@ let gameOver = false;
 let deathFrame = 0;
 let deathNextAt = 0;
 let showGameOver = false;
+let victory = false;
+let victoryFrame = 0;
+let victoryNextAt = 0;
+let victoryDone = false;
 
 // ---------- LOAD ASSETS ----------
 const sounds = {
@@ -30,6 +34,7 @@ const sounds = {
 
 const hpSheet = await loadImage("assets/sprites/ui/hp.png");
 const gameOverImg = await loadImage("assets/sprites/ui/gameover.png");
+const victoryImg = await loadImage("assets/sprites/ui/victory.png");
 
 const sprites = {
   playerIdle: await loadImages([
@@ -159,14 +164,14 @@ const sprites = {
     "assets/sprites/enemy/idle/lg_slime_idle_0005.png",
   ]),
   enemyAirUp: await loadImages([
-    "assets/sprites/enemy/Air Up/slime_air_up_0001.png",
-    "assets/sprites/enemy/Air Up/slime_air_up_0002.png",
-    "assets/sprites/enemy/Air Up/slime_air_up_0003.png",
+    "assets/sprites/enemy/air Up/slime_air_up_0001.png",
+    "assets/sprites/enemy/air Up/slime_air_up_0002.png",
+    "assets/sprites/enemy/air Up/slime_air_up_0003.png",
   ]),
   enemyAirDown: await loadImages([
-    "assets/sprites/enemy/Air Down/slime_air_down_0001.png",
-    "assets/sprites/enemy/Air Down/slime_air_down_0002.png",
-    "assets/sprites/enemy/Air Down/slime_air_down_0003.png",
+    "assets/sprites/enemy/air Down/slime_air_down_0001.png",
+    "assets/sprites/enemy/air Down/slime_air_down_0002.png",
+    "assets/sprites/enemy/air Down/slime_air_down_0003.png",
   ]),
   enemyPunch: await loadImages([
     "assets/sprites/enemy/Punch/slime_punch_0001.png",
@@ -186,11 +191,45 @@ const sprites = {
     "assets/sprites/enemy/Punch/slime_punch_0015.png",
     "assets/sprites/enemy/Punch/slime_punch_0016.png",
   ]),
+  enemyDeath: await loadImages([
+    "assets/sprites/enemy/death/lg_slime_death_0001.png",
+    "assets/sprites/enemy/death/lg_slime_death_0002.png",
+    "assets/sprites/enemy/death/lg_slime_death_0003.png",
+    "assets/sprites/enemy/death/lg_slime_death_0004.png",
+    "assets/sprites/enemy/death/lg_slime_death_0005.png",
+    "assets/sprites/enemy/death/lg_slime_death_0006.png",
+    "assets/sprites/enemy/death/lg_slime_death_0007.png",
+    "assets/sprites/enemy/death/lg_slime_death_0008.png",
+    "assets/sprites/enemy/death/lg_slime_death_0009.png",
+    "assets/sprites/enemy/death/lg_slime_death_0010.png",
+    "assets/sprites/enemy/death/lg_slime_death_0011.png",
+    "assets/sprites/enemy/death/lg_slime_death_0012.png",
+    "assets/sprites/enemy/death/lg_slime_death_0013.png",
+    "assets/sprites/enemy/death/lg_slime_death_0014.png",
+    "assets/sprites/enemy/death/lg_slime_death_0015.png",
+    "assets/sprites/enemy/death/lg_slime_death_0016.png",
+    "assets/sprites/enemy/death/lg_slime_death_0017.png",
+    "assets/sprites/enemy/death/lg_slime_death_0018.png",
+    "assets/sprites/enemy/death/lg_slime_death_0019.png",
+    "assets/sprites/enemy/death/lg_slime_death_0020.png",
+  ]),
 };
 
 const bgLayers = [
   { img: await loadImage("assets/bg/boss-background.png"), x: 0, speed: 0 },
 ];
+
+function precropSprite({ x, y, w, h }) {
+  const c = document.createElement("canvas");
+  c.width = w; c.height = h;
+  c.getContext("2d").drawImage(sprites.peashooterSheet, x, y, w, h, 0, 0, w, h);
+  return c;
+}
+
+const bulletFrames = {
+  spawn: sprites.bulletSpawn.map(precropSprite),
+  loop:  sprites.bulletLoop.map(precropSprite),
+};
 
 // ---------- HUD ----------
 const CARD_W = Math.round(478 / 6);
@@ -294,6 +333,7 @@ class Player extends Entity {
     this.shootUntil = 0;
     this.hp = 3;
     this.invincibleUntil = 0;
+    this.grounded = true;
   }
 
   isInvincible() {
@@ -335,6 +375,16 @@ class Player extends Entity {
     const left = input.pressed("ArrowLeft");
     const right = input.pressed("ArrowRight");
     const both = left && right;
+
+    if (victory) {
+      this.sx = 0;
+      this.state = "idle";
+      this.animate(sprites.playerIdle, this.delayIdle);
+      this.sy += gravity * dt;
+      this.y += this.sy * dt;
+      if (this.y >= GROUND_Y - this.h) { this.y = GROUND_Y - this.h; this.sy = 0; }
+      return;
+    }
 
     if (this.state !== "hit") {
       if ((this.state === "run" || this.state === "runAndShoot") && this.turnFrom === 0 && !both) {
@@ -512,7 +562,7 @@ class Enemy extends Entity {
     this.delayIdle = 80;
     this.frame = 0;
     this.nextFrameAt = 0;
-    this.hp = 25;
+    this.hp = 200;
     this.alive = true;
     this.facing = -1;
     this.flashUntil = 0;
@@ -528,6 +578,12 @@ class Enemy extends Entity {
     this.punchFrame = 0;
     this.punchNextAt = 0;
     this.punchDone = false;
+
+    this.dying = false;
+    this.deathFrame = 0;
+    this.deathNextAt = 0;
+    this.deathDone = false; 
+    this._flashImg = null;  
   }
 
   animate(seq, delay) {
@@ -539,11 +595,18 @@ class Enemy extends Entity {
     }
   }
 
-  hit(dmg = 1) {
-    if (!this.alive) return;
+   hit(dmg = 1) {
+    if (!this.alive || this.dying) return;
     this.hp -= dmg;
     this.flashUntil = performance.now() + 80;
-    if (this.hp <= 0) this.alive = false;
+    this._flashImg = null; 
+    if (this.hp <= 0) {
+      this.dying = true;
+      this.deathFrame = 0;
+      this.deathNextAt = performance.now();
+      console.log("enemy dying, every check:", enemies.every(e => e.dying || !e.alive));
+      if (enemies.every(e => e.dying || !e.alive)) triggerVictory();
+    }
   }
 
   getPunchScale(f) {
@@ -562,7 +625,26 @@ class Enemy extends Entity {
   }
 
   update(dt, player) {
-    if (!this.alive) return;
+
+   if (this.dying) {
+    const now = performance.now();
+    if (!this.deathDone) {
+      if (now >= this.deathNextAt) {
+        if (this.deathFrame < sprites.enemyDeath.length - 1) {
+          this.image = sprites.enemyDeath[this.deathFrame];
+          this.deathFrame++;
+          this.deathNextAt = now + 75;
+        } else {
+          this.image = sprites.enemyDeath[sprites.enemyDeath.length - 1];
+          this.deathDone = true;
+        }
+      }
+    } else {
+      this.animate(sprites.enemyDeath, 75);
+    }
+    return; // 👈 esse return garante que sai do update sempre que dying=true
+  }
+  if (!this.alive) return; // 👈 volta pra só !this.alive aqui
 
     const gravity = 1800, jumpForce = -1300, jumpSpeed = 230;
     const now = performance.now();
@@ -626,21 +708,27 @@ class Enemy extends Entity {
     }
   }
 
-  draw(ctx) {
-    if (!this.alive) return;
+   draw(ctx) {
+    if (!this.alive && !this.dying) return;
 
     const flashing = performance.now() < this.flashUntil;
     let img = this.image;
 
     if (flashing) {
-      const tmp = document.createElement("canvas");
-      tmp.width = this.w; tmp.height = this.h;
-      const t = tmp.getContext("2d");
-      t.drawImage(this.image, 0, 0, this.w, this.h);
-      t.globalCompositeOperation = "source-atop";
-      t.fillStyle = "white";
-      t.fillRect(0, 0, this.w, this.h);
-      img = tmp;
+      // cria o canvas branco só uma vez por hit
+      if (!this._flashImg || this._flashImg.width !== this.w || this._flashImg.height !== this.h) {
+        const tmp = document.createElement("canvas");
+        tmp.width = this.w; tmp.height = this.h;
+        const t = tmp.getContext("2d");
+        t.drawImage(this.image, 0, 0, this.w, this.h);
+        t.globalCompositeOperation = "source-atop";
+        t.fillStyle = "white";
+        t.fillRect(0, 0, this.w, this.h);
+        this._flashImg = tmp;
+      }
+      img = this._flashImg;
+    } else {
+      this._flashImg = null; // limpa quando não está flashando
     }
 
     ctx.save();
@@ -655,7 +743,7 @@ class Enemy extends Entity {
   }
 }
 
-// ---------- BULLET ----------
+// ---------- BULLET -----------
 class Bullet extends Entity {
   constructor(x, y, direction = 1) {
     const frame = sprites.bulletSpawn[0];
@@ -666,38 +754,33 @@ class Bullet extends Entity {
     this.speed = 800 * direction;
     this.offsetX = frame.offsetX || 0;
     this.offsetY = frame.offsetY || 0;
-    this.image = this.cropSprite(frame);
+    this.image = bulletFrames.spawn[0];
   }
 
-  animate(seq, delay, loop = true) {
+  animate(seq, frameData, delay, loop = true) {
     const now = performance.now();
     if (now >= this.nextFrameAt) {
       this.frame = loop
         ? (this.frame + 1) % seq.length
         : Math.min(this.frame + 1, seq.length - 1);
-      const frameData = seq[this.frame];
-      this.image = this.cropSprite(frameData);
-      this.w = frameData.w; this.h = frameData.h;
-      this.offsetX = frameData.offsetX || 0;
-      this.offsetY = frameData.offsetY || 0;
+      const fd = frameData[this.frame];
+      this.image = seq[this.frame];
+      this.w = fd.w; this.h = fd.h;
+      this.offsetX = fd.offsetX || 0;
+      this.offsetY = fd.offsetY || 0;
       this.nextFrameAt = now + delay;
+
       if (!loop && this.frame === seq.length - 1 && this.state === "spawn") {
         this.state = "loop"; this.frame = -1;
       }
     }
   }
 
-  cropSprite({ x, y, w, h }) {
-    const c = document.createElement("canvas");
-    c.width = w; c.height = h;
-    c.getContext("2d").drawImage(sprites.peashooterSheet, x, y, w, h, 0, 0, w, h);
-    return c;
-  }
-
   update(dt) {
-    if (this.state === "spawn") this.animate(sprites.bulletSpawn, 50, false);
-    else if (this.state === "loop") {
-      this.animate(sprites.bulletLoop, 60);
+    if (this.state === "spawn") {
+      this.animate(bulletFrames.spawn, sprites.bulletSpawn, 50, false);
+    } else if (this.state === "loop") {
+      this.animate(bulletFrames.loop, sprites.bulletLoop, 60);
       this.x += this.speed * dt;
     }
   }
@@ -722,10 +805,10 @@ const enemies = [new Enemy(720)];
 let last = 0;
 
 function loop(t) {
-  const dt = (t - last) / 1000;
+  const dt = Math.min((t - last) / 1000, 0.05);
   last = t;
 
-  if (!gameOver) {
+  if (!gameOver && !victory) {
     player.update(dt);
     enemies.forEach(e => e.update(dt, player));
     bullets.forEach(b => b.update(dt));
@@ -734,10 +817,14 @@ function loop(t) {
     for (let i = bullets.length - 1; i >= 0; i--) {
       if (bullets[i].x < -200 || bullets[i].x > canvas.width + 200) bullets.splice(i, 1);
     }
-  } else {
+  } else if (gameOver && !victory) {
     updateGameOver();
+  } else if (victory) {
+    player.update(dt); 
+    enemies.forEach(e => e.update(dt, player));
   }
 
+  if (victory) updateVictory();
   render();
   requestAnimationFrame(loop);
 }
@@ -753,11 +840,11 @@ function render() {
     bullets.forEach(b => b.draw(ctx));
   } else {
     enemies.forEach(e => e.draw(ctx));
-    bullets.forEach(b => b.draw(ctx));
     drawGameOver();
   }
 
   drawHUD();
+  if (victory) drawVictory();
 }
 
 // ---------- UTIL ----------
@@ -799,11 +886,13 @@ function playShotSound() {
 
 function handleBulletEnemyCollisions() {
   for (let i = bullets.length - 1; i >= 0; i--) {
+    if (i >= bullets.length) continue; 
     const b = bullets[i];
+    if (!b) continue; 
     const bx = b.x - b.offsetX, by = b.y - b.offsetY;
     for (let j = 0; j < enemies.length; j++) {
       const e = enemies[j];
-      if (!e.alive) continue;
+      if (!e.alive || e.dying) continue;
       if (aabb(bx, by, b.w, b.h, e.x, e.y, e.w, e.h)) {
         e.hit(1);
         bullets.splice(i, 1);
@@ -815,7 +904,7 @@ function handleBulletEnemyCollisions() {
 
 function handlePlayerEnemyCollisions() {
   enemies.forEach(e => {
-    if (!e.alive) return;
+    if (!e.alive || e.dying) return;
     if (aabb(player.x, player.y, player.w, player.h, e.x, e.y, e.w, e.h)) {
       player.takeHit(e.x + e.w / 2);
     }
@@ -824,4 +913,59 @@ function handlePlayerEnemyCollisions() {
 
 function aabb(x1, y1, w1, h1, x2, y2, w2, h2) {
   return x1 < x2 + w2 && x1 + w1 > x2 && y1 < y2 + h2 && y1 + h1 > y2;
+}
+
+function triggerVictory() {
+  victory = true;
+  victoryFrame = 0;
+  victoryNextAt = performance.now();
+  victoryDone = false;
+
+  // para todos os sons
+  if (isRapidFiring) {
+    sounds.rapidFire.pause();
+    sounds.rapidFire.currentTime = 0;
+    isRapidFiring = false;
+  }
+  fireButtonPressedAt = 0;
+  clearTimeout(shotTimer);
+
+  // força player pro idle
+  player.state = "idle";
+  player.frame = 0;
+  player.sx = 0;
+  player.sy = 0;
+
+  // limpa todas as balas
+  bullets.length = 0;
+}
+
+function updateVictory() {
+  if (victoryDone) return;
+  const now = performance.now();
+  if (now >= victoryNextAt) {
+    victoryFrame++;
+    victoryNextAt = now + 60;
+    if (victoryFrame >= 8) victoryDone = true; // para no último frame
+  }
+}
+
+function drawVictory() {
+  const cols = 4, rows = 7;
+  const fw = Math.round(5130 / cols);
+  const fh = Math.round(5056 / rows);
+  const col = victoryFrame % cols;
+  const row = Math.floor(victoryFrame / cols);
+  const inset = 6;
+  const gw = canvas.width;  
+  const gh = canvas.height;
+
+  ctx.save();
+  ctx.globalCompositeOperation = "screen"; 
+  ctx.drawImage(
+    victoryImg,
+    col * fw + inset, row * fh + inset, fw - inset * 2, fh - inset * 2,
+    0, 0, gw, gh
+  );
+  ctx.restore();
 }
