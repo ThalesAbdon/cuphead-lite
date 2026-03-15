@@ -101,6 +101,13 @@ const sprites = {
     "assets/sprites/player/shoot/straight/cuphead_shoot_straight_0002.png",
     "assets/sprites/player/shoot/straight/cuphead_shoot_straight_0003.png",
   ]),
+  playerUpShoot: await loadImages([
+  "assets/sprites/player/shoot/up/cuphead_aim_up_0001.png",
+  "assets/sprites/player/shoot/up/cuphead_aim_up_0002.png",
+  "assets/sprites/player/shoot/up/cuphead_aim_up_0003.png",
+  "assets/sprites/player/shoot/up/cuphead_aim_up_0004.png",
+  "assets/sprites/player/shoot/up/cuphead_aim_up_0005.png",
+  ]),
   playerRunShoot: await loadImages([
     "assets/sprites/player/shoot/run/cuphead_run_shoot_0001.png",
     "assets/sprites/player/shoot/run/cuphead_run_shoot_0002.png",
@@ -469,6 +476,15 @@ class Player extends Entity {
           this.animate(sprites.playerRunShoot, this.delayShoot);
           break;
 
+        case "shootUp":
+          this.sx = 0;
+          this.animate(sprites.playerUpShoot, this.delayShoot);
+          if (performance.now() > this.shootUntil) {
+            this.state = "idle";
+            this.frame = 0;
+          }
+          break;  
+
         case "turn":
           this.sx = 0;
           this.animate(sprites.playerTurn, this.delayTurn, true);
@@ -539,7 +555,7 @@ class Player extends Entity {
   }
 
   handleShooting() {
-    if (this.state === "hit" || this.state === "dash") {
+    if (this.state === "hit" || this.state === "dash" || this.state === "dashAir") {
       fireButtonPressedAt = 0;
       if (isRapidFiring) {
         sounds.rapidFire.pause();
@@ -549,10 +565,25 @@ class Player extends Entity {
       return;
     }
 
+    const aimingUp = input.pressed("ArrowUp") && !input.pressed("ArrowLeft") && !input.pressed("ArrowRight");
     const isShooting = input.pressed("KeyZ");
     const now = performance.now();
     const canRunAndShoot = this.state === "run" || this.state === "runAndShoot";
-    const canIdleShoot = this.state === "idle" || this.state === "shoot";
+    const canIdleShoot = this.state === "idle" || this.state === "shoot" || this.state === "shootUp";
+
+    if (aimingUp && isShooting && this.grounded) {
+      if (canShoot()) {
+        const bulletX = this.facing === 1 
+          ? this.x + this.w * 0.48  
+          : this.x + this.w * -0.28;
+        bullets.push(new Bullet(bulletX, this.y - 20, 0, true));
+        this.state = "shootUp";
+        this.frame = 0;
+        this.shootUntil = performance.now() + 300;
+        lastShot = performance.now() + 150;
+      }
+      return;
+    }
 
     if (isShooting && (canRunAndShoot || canIdleShoot)) {
       if (!fireButtonPressedAt) fireButtonPressedAt = now;
@@ -824,6 +855,7 @@ class Enemy extends Entity {
     }
 
     ctx.save();
+    
     if (this.facing === -1) {
       ctx.drawImage(img, this.x, this.y, this.w, this.h);
     } else {
@@ -837,13 +869,15 @@ class Enemy extends Entity {
 
 // ---------- BULLET -----------
 class Bullet extends Entity {
-  constructor(x, y, direction = 1) {
+    constructor(x, y, direction = 1, vertical = false) {
     const frame = sprites.bulletSpawn[0];
     super(x, y, frame.w, frame.h, null);
     this.state = "spawn";
     this.frame = 0;
     this.nextFrameAt = 0;
-    this.speed = 800 * direction;
+    this.vertical = vertical;
+    this.speed = vertical ? 0 : 800 * direction;
+    this.speedY = vertical ? -800 : 0; x
     this.offsetX = frame.offsetX || 0;
     this.offsetY = frame.offsetY || 0;
     this.image = bulletFrames.spawn[0];
@@ -874,12 +908,17 @@ class Bullet extends Entity {
     } else if (this.state === "loop") {
       this.animate(bulletFrames.loop, sprites.bulletLoop, 60);
       this.x += this.speed * dt;
+      this.y += this.speedY * dt;
     }
   }
 
   draw(ctx) {
     ctx.save();
-    if (this.speed < 0) {
+    if (this.vertical) {
+      ctx.translate(this.x + this.w / 2, this.y + this.h / 2);
+      ctx.rotate(-Math.PI / 2);
+      ctx.drawImage(this.image, -this.w / 2, -this.h / 2, this.w, this.h);
+    } else if (this.speed < 0) {
       ctx.translate(this.x - this.offsetX + this.w, this.y - this.offsetY);
       ctx.scale(-1, 1);
       ctx.drawImage(this.image, 0, 0, this.w, this.h);
@@ -978,10 +1017,16 @@ function playShotSound() {
 
 function handleBulletEnemyCollisions() {
   for (let i = bullets.length - 1; i >= 0; i--) {
-    if (i >= bullets.length) continue; 
+    if (i >= bullets.length) continue;
     const b = bullets[i];
-    if (!b) continue; 
+    if (!b) continue;
     const bx = b.x - b.offsetX, by = b.y - b.offsetY;
+
+    if (b.y < -200 || b.x < -200 || b.x > canvas.width + 200) {
+      bullets.splice(i, 1);
+      continue;
+    }
+
     for (let j = 0; j < enemies.length; j++) {
       const e = enemies[j];
       if (!e.alive || e.dying) continue;
