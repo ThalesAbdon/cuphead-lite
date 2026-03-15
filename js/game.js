@@ -11,6 +11,7 @@ window.addEventListener("resize", resize);
 const input = new Input();
 
 // ---------- GLOBAL STATE ----------
+let gameStarted = false;
 let fireButtonPressedAt = 0;
 let isRapidFiring = false;
 let lastShot = 0;
@@ -73,14 +74,14 @@ const sprites = {
     "assets/sprites/player/dash/ground/cuphead_dash_0008.png",
   ]),
   playerDashAir: await loadImages([
-  "assets/sprites/player/dash/air/cuphead_dash_air_0001.png",
-  "assets/sprites/player/dash/air/cuphead_dash_air_0002.png",
-  "assets/sprites/player/dash/air/cuphead_dash_air_0003.png",
-  "assets/sprites/player/dash/air/cuphead_dash_air_0004.png",
-  "assets/sprites/player/dash/air/cuphead_dash_air_0005.png",
-  "assets/sprites/player/dash/air/cuphead_dash_air_0006.png",
-  "assets/sprites/player/dash/air/cuphead_dash_air_0007.png",
-  "assets/sprites/player/dash/air/cuphead_dash_air_0008.png",
+    "assets/sprites/player/dash/air/cuphead_dash_air_0001.png",
+    "assets/sprites/player/dash/air/cuphead_dash_air_0002.png",
+    "assets/sprites/player/dash/air/cuphead_dash_air_0003.png",
+    "assets/sprites/player/dash/air/cuphead_dash_air_0004.png",
+    "assets/sprites/player/dash/air/cuphead_dash_air_0005.png",
+    "assets/sprites/player/dash/air/cuphead_dash_air_0006.png",
+    "assets/sprites/player/dash/air/cuphead_dash_air_0007.png",
+    "assets/sprites/player/dash/air/cuphead_dash_air_0008.png",
   ]),
   playerJump: await loadImages([
     "assets/sprites/player/jump/cuphead_jump_0001.png",
@@ -102,11 +103,11 @@ const sprites = {
     "assets/sprites/player/shoot/straight/cuphead_shoot_straight_0003.png",
   ]),
   playerUpShoot: await loadImages([
-  "assets/sprites/player/shoot/up/cuphead_aim_up_0001.png",
-  "assets/sprites/player/shoot/up/cuphead_aim_up_0002.png",
-  "assets/sprites/player/shoot/up/cuphead_aim_up_0003.png",
-  "assets/sprites/player/shoot/up/cuphead_aim_up_0004.png",
-  "assets/sprites/player/shoot/up/cuphead_aim_up_0005.png",
+    "assets/sprites/player/shoot/up/cuphead_aim_up_0001.png",
+    "assets/sprites/player/shoot/up/cuphead_aim_up_0002.png",
+    "assets/sprites/player/shoot/up/cuphead_aim_up_0003.png",
+    "assets/sprites/player/shoot/up/cuphead_aim_up_0004.png",
+    "assets/sprites/player/shoot/up/cuphead_aim_up_0005.png",
   ]),
   playerRunShoot: await loadImages([
     "assets/sprites/player/shoot/run/cuphead_run_shoot_0001.png",
@@ -219,9 +220,9 @@ const sprites = {
     "assets/sprites/enemy/Punch/slime_punch_0016.png",
   ]),
   enemyFalling: await loadImages([
-  "assets/sprites/enemy/falling/lg_slime_falling_0001.png",
-  "assets/sprites/enemy/falling/lg_slime_falling_0002.png",
-  "assets/sprites/enemy/falling/lg_slime_falling_0003.png",
+    "assets/sprites/enemy/falling/lg_slime_falling_0001.png",
+    "assets/sprites/enemy/falling/lg_slime_falling_0002.png",
+    "assets/sprites/enemy/falling/lg_slime_falling_0003.png",
   ]),
   enemyDeath: await loadImages([
     "assets/sprites/enemy/death/lg_slime_death_0001.png",
@@ -263,6 +264,57 @@ const bulletFrames = {
   loop:  sprites.bulletLoop.map(precropSprite),
 };
 
+// ---------- INTRO ----------
+function drawIntro() {
+  ctx.fillStyle = "rgba(0,0,0,0.75)";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  const cx = canvas.width / 2;
+  const cy = canvas.height / 2;
+
+  ctx.fillStyle = "#fff";
+  ctx.font = "bold 48px serif";
+  ctx.textAlign = "center";
+  ctx.fillText("CUPHEAD", cx, cy - 180);
+
+  ctx.strokeStyle = "#fff";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(cx - 220, cy - 155);
+  ctx.lineTo(cx + 220, cy - 155);
+  ctx.stroke();
+
+  ctx.font = "24px serif";
+  const controls = [
+    "← →    Mover",
+    "SPACE   Pular",
+    "Z       Atirar",
+    "↑ + Z   Atirar pra cima",
+    "X       Dash",
+  ];
+  controls.forEach((line, i) => {
+    ctx.fillText(line, cx, cy - 100 + i * 48);
+  });
+
+  ctx.beginPath();
+  ctx.moveTo(cx - 220, cy + 140);
+  ctx.lineTo(cx + 220, cy + 140);
+  ctx.stroke();
+
+  const blink = Math.floor(performance.now() / 500) % 2 === 0;
+  if (blink) {
+    ctx.font = "bold 28px serif";
+    ctx.fillStyle = "#FFD700";
+    ctx.fillText("Pressione ENTER para começar", cx, cy + 185);
+  }
+
+  ctx.textAlign = "left";
+}
+
+window.addEventListener("keydown", (e) => {
+  if (e.code === "Enter" && !gameStarted) gameStarted = true;
+});
+
 // ---------- HUD ----------
 const CARD_W = Math.round(478 / 6);
 const CARD_H = 34;
@@ -280,11 +332,7 @@ function drawHUD() {
   const dw = Math.round(CARD_W * scale);
   const dh = Math.round(CARD_H * scale);
   const margin = 16;
-  ctx.drawImage(
-    hpSheet,
-    idx * CARD_W, 0, CARD_W, CARD_H,
-    margin, canvas.height - dh - margin, dw, dh
-  );
+  ctx.drawImage(hpSheet, idx * CARD_W, 0, CARD_W, CARD_H, margin, canvas.height - dh - margin, dw, dh);
 }
 
 // ---------- GAME OVER ----------
@@ -293,115 +341,71 @@ function triggerGameOver() {
   deathFrame = 0;
   deathNextAt = performance.now();
   showGameOver = false;
-  if (isRapidFiring) {
-    sounds.rapidFire.pause();
-    sounds.rapidFire.currentTime = 0;
-    isRapidFiring = false;
-  }
+  if (isRapidFiring) { sounds.rapidFire.pause(); sounds.rapidFire.currentTime = 0; isRapidFiring = false; }
 }
 
 function updateGameOver() {
   const now = performance.now();
   if (!showGameOver && now >= deathNextAt) {
     if (deathFrame < sprites.playerDeath.length) {
-      player.image = sprites.playerDeath[deathFrame];
-      deathFrame++;
+      player.image = sprites.playerDeath[deathFrame++];
       deathNextAt = now + 70;
-    } else {
-      showGameOver = true;
-    }
+    } else { showGameOver = true; }
   }
 }
 
 function drawGameOver() {
   ctx.save();
   if (player.facing === -1) {
-    ctx.translate(player.x + player.w, player.y);
-    ctx.scale(-1, 1);
+    ctx.translate(player.x + player.w, player.y); ctx.scale(-1, 1);
     ctx.drawImage(player.image, 0, 0, player.w, player.h);
-  } else {
-    ctx.drawImage(player.image, player.x, player.y, player.w, player.h);
-  }
+  } else { ctx.drawImage(player.image, player.x, player.y, player.w, player.h); }
   ctx.restore();
 
   if (showGameOver) {
     ctx.fillStyle = "rgba(0,0,0,0.5)";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    const frameW = Math.round(3238 / 3);
-    const frameH = Math.round(1646 / 7);
-    const inset = 6; 
+    const frameW = Math.round(3238 / 3), frameH = Math.round(1646 / 7), inset = 6;
     const gw = Math.min(canvas.width * 0.5, 540);
     const gh = gw * ((frameH - inset * 2) / (frameW - inset * 2));
-    ctx.drawImage(
-      gameOverImg,
-      inset, inset, frameW - inset * 2, frameH - inset * 2,
-      canvas.width / 2 - gw / 2,
-      canvas.height / 2 - gh / 2,
-      gw, gh
-    );
+    ctx.drawImage(gameOverImg, inset, inset, frameW - inset * 2, frameH - inset * 2,
+      canvas.width / 2 - gw / 2, canvas.height / 2 - gh / 2, gw, gh);
   }
 }
 
 // ---------- PLAYER ----------
 class Player extends Entity {
   constructor() {
-    super(100, 0, 96, 128, sprites.playerIdle[0]);
+    super(100, GROUND_Y - 128, 96, 128, sprites.playerIdle[0]);
     this.init();
   }
 
   init() {
-    this.delayIdle = 90;
-    this.delayRun = 30;
-    this.delayTurn = 80;
-    this.delayShoot = 40;
-    this.delayJump = 75;
-    this.delayHit = 60;
-    this.frame = 0;
-    this.nextFrameAt = 0;
-    this.state = "idle";
-    this.facing = 1;
-    this.turnFrom = 0;
-    this.shootUntil = 0;
-    this.hp = 3;
-    this.invincibleUntil = 0;
-    this.grounded = true;
-    this.dashCooldown = 0;      
-    this.dashUntil = 0;         
-    this.dashSpeed = 900;       
-    this.dashDuration = 300;    
-    this.dashCooldownTime = 1000;
+    this.delayIdle = 90; this.delayRun = 30; this.delayTurn = 80;
+    this.delayShoot = 40; this.delayJump = 75; this.delayHit = 60;
+    this.frame = 0; this.nextFrameAt = 0; this.state = "idle";
+    this.facing = 1; this.turnFrom = 0; this.shootUntil = 0;
+    this.hp = 3; this.invincibleUntil = 0; this.grounded = true;
+    this.dashCooldown = 0; this.dashUntil = 0;
+    this.dashSpeed = 900; this.dashDuration = 300; this.dashCooldownTime = 1000;
   }
 
-  isInvincible() {
-    return performance.now() < this.invincibleUntil;
-  }
+  isInvincible() { return performance.now() < this.invincibleUntil; }
 
   takeHit(fromX) {
     if (this.isInvincible()) return;
     this.hp--;
-
-    if (this.hp <= 0) {
-      triggerGameOver();
-      return;
-    }
-
+    if (this.hp <= 0) { triggerGameOver(); return; }
     this.invincibleUntil = performance.now() + 2000;
     const dir = this.x + this.w / 2 < fromX ? -1 : 1;
-    this.sx = dir * 400;
-    this.sy = -500;
-    this.grounded = false;
-    this.state = "hit";
-    this.frame = 0;
-    this.nextFrameAt = 0;
+    this.sx = dir * 400; this.sy = -500; this.grounded = false;
+    this.state = "hit"; this.frame = 0; this.nextFrameAt = 0;
   }
 
   animate(seq, delay, stayLast = false) {
     const now = performance.now();
     if (now >= this.nextFrameAt) {
-      if (!stayLast || this.frame < seq.length - 1) {
-        this.frame = (this.frame + 1) % seq.length;
-      }
+      if (!stayLast || this.frame < seq.length - 1) this.frame = (this.frame + 1) % seq.length;
       this.image = seq[this.frame];
       this.nextFrameAt = now + delay;
     }
@@ -414,11 +418,9 @@ class Player extends Entity {
     const both = left && right;
 
     if (victory) {
-      this.sx = 0;
-      this.state = "idle";
+      this.sx = 0; this.state = "idle";
       this.animate(sprites.playerIdle, this.delayIdle);
-      this.sy += gravity * dt;
-      this.y += this.sy * dt;
+      this.sy += gravity * dt; this.y += this.sy * dt;
       if (this.y >= GROUND_Y - this.h) { this.y = GROUND_Y - this.h; this.sy = 0; }
       return;
     }
@@ -434,69 +436,45 @@ class Player extends Entity {
           if (left ^ right) { this.state = "run"; this.frame = 0; }
           else { this.sx = 0; this.animate(sprites.playerIdle, this.delayIdle); }
           break;
-
         case "jump":
           this.sx = (left ? -1 : right ? 1 : 0) * speed;
           if (this.sy < 0) this.animate(sprites.playerJump.slice(0, 4), this.delayJump);
           else this.animate(sprites.playerJump.slice(4, 8), this.delayJump);
           if (this.grounded) { this.state = "idle"; this.frame = 0; }
           break;
-
         case "dash":
           this.animate(sprites.playerDashGround, 40);
           this.sx = this.facing === 1 ? this.dashSpeed : -this.dashSpeed;
-          if (performance.now() > this.dashUntil) {
-            this.state = "idle";
-            this.frame = 0;
-            this.sx = 0;
-          }
+          if (performance.now() > this.dashUntil) { this.state = "idle"; this.frame = 0; this.sx = 0; }
           break;
         case "dashAir":
           this.animate(sprites.playerDashAir, 40);
           this.sx = this.facing === 1 ? this.dashSpeed : -this.dashSpeed;
-          this.sy = 0; 
-          if (performance.now() > this.dashUntil) {
-            this.state = "jump";
-            this.frame = 0;
-            this.sx = 0;
-          }
+          this.sy = 0;
+          if (performance.now() > this.dashUntil) { this.state = "jump"; this.frame = 0; this.sx = 0; }
           break;
         case "run":
           if (!(left ^ right) || both) { this.state = "idle"; this.frame = 0; break; }
           if (input.pressed("KeyZ")) { this.state = "runAndShoot"; this.frame = 0; break; }
-          this.sx = (left ? -1 : 1) * speed;
-          this.facing = left ? -1 : 1;
-          this.animate(sprites.playerRun, this.delayRun);
-          break;
-
+          this.sx = (left ? -1 : 1) * speed; this.facing = left ? -1 : 1;
+          this.animate(sprites.playerRun, this.delayRun); break;
         case "runAndShoot":
           if (!(left ^ right) || both || !input.pressed("KeyZ")) { this.state = "run"; this.frame = 0; break; }
-          this.sx = (left ? -1 : 1) * speed;
-          this.facing = left ? -1 : 1;
-          this.animate(sprites.playerRunShoot, this.delayShoot);
-          break;
-
+          this.sx = (left ? -1 : 1) * speed; this.facing = left ? -1 : 1;
+          this.animate(sprites.playerRunShoot, this.delayShoot); break;
         case "shootUp":
           this.sx = 0;
           this.animate(sprites.playerUpShoot, this.delayShoot);
-          if (performance.now() > this.shootUntil) {
-            this.state = "idle";
-            this.frame = 0;
-          }
-          break;  
-
+          if (performance.now() > this.shootUntil) { this.state = "idle"; this.frame = 0; }
+          break;
         case "turn":
           this.sx = 0;
           this.animate(sprites.playerTurn, this.delayTurn, true);
           const oppositeHeld = (this.turnFrom === 1 && left) || (this.turnFrom === -1 && right);
           if (this.frame === sprites.playerTurn.length - 1 && oppositeHeld) {
-            this.facing *= -1;
-            this.state = "run";
-            this.frame = 0;
-            this.turnFrom = 0;
+            this.facing *= -1; this.state = "run"; this.frame = 0; this.turnFrom = 0;
           }
           break;
-
         case "shoot":
           this.sx = 0;
           if ((left ^ right) && input.pressed("KeyZ")) { this.state = "runAndShoot"; break; }
@@ -507,49 +485,33 @@ class Player extends Entity {
       }
 
       if (this.grounded && input.pressed("KeyX") && performance.now() > this.dashCooldown) {
-        this.state = "dash";
-        this.frame = 0;
+        this.state = "dash"; this.frame = 0;
         this.dashUntil = performance.now() + this.dashDuration;
         this.dashCooldown = performance.now() + this.dashCooldownTime;
       }
 
       if (!this.grounded && this.state === "jump" && input.pressed("KeyX") && performance.now() > this.dashCooldown) {
-        this.state = "dashAir";
-        this.frame = 0;
+        this.state = "dashAir"; this.frame = 0;
         this.dashUntil = performance.now() + this.dashDuration;
         this.dashCooldown = performance.now() + this.dashCooldownTime;
       }
 
       if (this.grounded && input.pressed("Space")) {
-        this.sy = jump;
-        this.grounded = false;
-        this.state = "jump";
-        this.frame = 0;
+        this.sy = jump; this.grounded = false; this.state = "jump"; this.frame = 0;
       }
-
     } else {
       const seq = this.grounded ? sprites.playerHit : sprites.playerHitAir;
       this.animate(seq, this.delayHit, true);
       this.sx *= 0.85;
-      if (this.frame === seq.length - 1) {
-        this.state = "idle";
-        this.frame = 0;
-        this.sx = 0;
-      }
+      if (this.frame === seq.length - 1) { this.state = "idle"; this.frame = 0; this.sx = 0; }
     }
 
     this.sy += gravity * dt;
     this.x += this.sx * dt;
     this.y += this.sy * dt;
-
     if (this.x < 0) this.x = 0;
     if (this.x + this.w > canvas.width) this.x = canvas.width - this.w;
-
-    if (this.y >= GROUND_Y - this.h) {
-      this.y = GROUND_Y - this.h;
-      this.sy = 0;
-      this.grounded = true;
-    }
+    if (this.y >= GROUND_Y - this.h) { this.y = GROUND_Y - this.h; this.sy = 0; this.grounded = true; }
 
     this.handleShooting();
   }
@@ -557,11 +519,7 @@ class Player extends Entity {
   handleShooting() {
     if (this.state === "hit" || this.state === "dash" || this.state === "dashAir") {
       fireButtonPressedAt = 0;
-      if (isRapidFiring) {
-        sounds.rapidFire.pause();
-        sounds.rapidFire.currentTime = 0;
-        isRapidFiring = false;
-      }
+      if (isRapidFiring) { sounds.rapidFire.pause(); sounds.rapidFire.currentTime = 0; isRapidFiring = false; }
       return;
     }
 
@@ -573,12 +531,9 @@ class Player extends Entity {
 
     if (aimingUp && isShooting && this.grounded) {
       if (canShoot()) {
-        const bulletX = this.facing === 1 
-          ? this.x + this.w * 0.48  
-          : this.x + this.w * -0.28;
+        const bulletX = this.facing === 1 ? this.x + this.w * 0.48 : this.x + this.w * -0.28;
         bullets.push(new Bullet(bulletX, this.y - 20, 0, true));
-        this.state = "shootUp";
-        this.frame = 0;
+        this.state = "shootUp"; this.frame = 0;
         this.shootUntil = performance.now() + 300;
         lastShot = performance.now() + 150;
       }
@@ -587,14 +542,10 @@ class Player extends Entity {
 
     if (isShooting && (canRunAndShoot || canIdleShoot)) {
       if (!fireButtonPressedAt) fireButtonPressedAt = now;
-      const holdTime = now - fireButtonPressedAt;
-      if (holdTime > 50 && !isRapidFiring) {
-        sounds.rapidFire.currentTime = 0;
-        sounds.rapidFire.loop = true;
-        sounds.rapidFire.play();
+      if (now - fireButtonPressedAt > 50 && !isRapidFiring) {
+        sounds.rapidFire.currentTime = 0; sounds.rapidFire.loop = true; sounds.rapidFire.play();
         isRapidFiring = true;
       }
-
       if (canShoot()) {
         const bulletX = this.facing === 1 ? this.x + this.w : this.x;
         bullets.push(new Bullet(bulletX, this.y + this.h / 2 - 8, this.facing));
@@ -609,33 +560,19 @@ class Player extends Entity {
       }
     } else {
       fireButtonPressedAt = 0;
-      if (isRapidFiring) {
-        sounds.rapidFire.pause();
-        sounds.rapidFire.currentTime = 0;
-        isRapidFiring = false;
-      }
+      if (isRapidFiring) { sounds.rapidFire.pause(); sounds.rapidFire.currentTime = 0; isRapidFiring = false; }
     }
   }
 
-  startTurn(dir) {
-    this.state = "turn";
-    this.frame = 0;
-    this.turnFrom = dir;
-  }
+  startTurn(dir) { this.state = "turn"; this.frame = 0; this.turnFrom = dir; }
 
   draw(ctx) {
-    if (this.isInvincible()) {
-      const blink = Math.floor(performance.now() / 100) % 2 === 0;
-      if (!blink) return;
-    }
+    if (this.isInvincible() && Math.floor(performance.now() / 100) % 2 === 0) return;
     ctx.save();
     if (this.facing === -1) {
-      ctx.translate(this.x + this.w, this.y);
-      ctx.scale(-1, 1);
+      ctx.translate(this.x + this.w, this.y); ctx.scale(-1, 1);
       ctx.drawImage(this.image, 0, 0, this.w, this.h);
-    } else {
-      ctx.drawImage(this.image, this.x, this.y, this.w, this.h);
-    }
+    } else { ctx.drawImage(this.image, this.x, this.y, this.w, this.h); }
     ctx.restore();
   }
 }
@@ -650,37 +587,16 @@ class Enemy extends Entity {
     const h = Math.round(base.height * scale);
     super(x, GROUND_Y - h, w, h, base);
 
-    this.scale = scale;
-    this.baseW = w;
-    this.baseH = h;
-    this.delayIdle = 80;
-    this.frame = 0;
-    this.nextFrameAt = 0;
-    this.hp = 200;
-    this.alive = true;
-    this.facing = -1;
-    this.flashUntil = 0;
-
-    this.sy = 0;
-    this.sx = 0;
-    this.grounded = true;
-    this.jumpInterval = 1650;
-    this.nextJumpAt = performance.now() + this.jumpInterval;
-
-    this.jumpsLeft = 5;
-    this.state = "jumping";
-    this.punchFrame = 0;
-    this.punchNextAt = 0;
-    this.punchDone = false;
-
-    this.falling = false;
-    this.fallingTriggered = false;
-
-    this.dying = false;
-    this.deathFrame = 0;
-    this.deathNextAt = 0;
-    this.deathDone = false; 
-    this._flashImg = null;  
+    this.scale = scale; this.baseW = w; this.baseH = h;
+    this.delayIdle = 80; this.frame = 0; this.nextFrameAt = 0;
+    this.hp = 200; this.alive = true; this.facing = -1; this.flashUntil = 0;
+    this.sy = 0; this.sx = 0; this.grounded = true;
+    this.jumpInterval = 1650; this.nextJumpAt = performance.now() + this.jumpInterval;
+    this.jumpsLeft = 5; this.state = "jumping";
+    this.punchFrame = 0; this.punchNextAt = 0; this.punchDone = false;
+    this.falling = false; this.fallingTriggered = false;
+    this.dying = false; this.deathFrame = 0; this.deathNextAt = 0;
+    this.deathDone = false; this._flashImg = null;
   }
 
   animate(seq, delay) {
@@ -692,74 +608,50 @@ class Enemy extends Entity {
     }
   }
 
-   hit(dmg = 1) {
+  hit(dmg = 1) {
     if (!this.alive || this.dying) return;
     this.hp -= dmg;
     this.flashUntil = performance.now() + 80;
-    this._flashImg = null; 
+    this._flashImg = null;
     if (this.hp <= 0) {
-      this.dying = true;
-      this.deathFrame = 0;
-      this.deathNextAt = performance.now();
-      console.log("enemy dying, every check:", enemies.every(e => e.dying || !e.alive));
+      this.dying = true; this.deathFrame = 0; this.deathNextAt = performance.now();
       if (enemies.every(e => e.dying || !e.alive)) triggerVictory();
     }
   }
 
   getPunchScale(f) {
-    const maxW = 2.2, maxH = 1.4;
-    let sw = 1, sh = 1;
-    if (f >= 3 && f <= 7) {
-      const t = (f - 3) / 4;
-      sw = 1 + t * (maxW - 1); sh = 1 + t * (maxH - 1);
-    } else if (f >= 8 && f <= 11) {
-      sw = maxW; sh = maxH;
-    } else if (f >= 12 && f <= 16) {
-      const t = (f - 12) / 4;
-      sw = maxW - t * (maxW - 1); sh = maxH - t * (maxH - 1);
-    }
+    const maxW = 2.2, maxH = 1.4; let sw = 1, sh = 1;
+    if (f >= 3 && f <= 7) { const t = (f-3)/4; sw = 1+t*(maxW-1); sh = 1+t*(maxH-1); }
+    else if (f >= 8 && f <= 11) { sw = maxW; sh = maxH; }
+    else if (f >= 12 && f <= 16) { const t = (f-12)/4; sw = maxW-t*(maxW-1); sh = maxH-t*(maxH-1); }
     return { sw, sh };
   }
 
   update(dt, player) {
-
-   if (this.dying) {
-    const now = performance.now();
-    if (!this.deathDone) {
-      if (now >= this.deathNextAt) {
-        if (this.deathFrame < sprites.enemyDeath.length - 1) {
-          this.image = sprites.enemyDeath[this.deathFrame];
-          this.deathFrame++;
-          this.deathNextAt = now + 75;
-        } else {
-          this.image = sprites.enemyDeath[sprites.enemyDeath.length - 1];
-          this.deathDone = true;
+    if (this.dying) {
+      const now = performance.now();
+      if (!this.deathDone) {
+        if (now >= this.deathNextAt) {
+          if (this.deathFrame < sprites.enemyDeath.length - 1) {
+            this.image = sprites.enemyDeath[this.deathFrame++];
+            this.deathNextAt = now + 75;
+          } else { this.image = sprites.enemyDeath[sprites.enemyDeath.length - 1]; this.deathDone = true; }
         }
-      }
-    } else {
-      this.animate(sprites.enemyDeath, 75);
+      } else { this.animate(sprites.enemyDeath, 75); }
+      return;
     }
-    return; // 👈 esse return garante que sai do update sempre que dying=true
-  }
-  if (!this.alive) return; // 👈 volta pra só !this.alive aqui
+    if (!this.alive) return;
 
     const gravity = 1800, jumpForce = -1300, jumpSpeed = 230;
     const now = performance.now();
-
     this.facing = player.x + player.w / 2 < this.x + this.w / 2 ? -1 : 1;
 
     if (this.falling) {
-      this.sy += 4000 * dt;
-      this.x += this.sx * dt;
-      this.y += this.sy * dt;
+      this.sy += 4000 * dt; this.x += this.sx * dt; this.y += this.sy * dt;
       this.animate(sprites.enemyFalling, 80);
-
       if (this.y >= GROUND_Y - this.h) {
-        this.y = GROUND_Y - this.h;
-        this.sy = 0; this.sx = 0;
-        this.grounded = true;
-        this.fallingTriggered = false
-        this.falling = false;
+        this.y = GROUND_Y - this.h; this.sy = 0; this.sx = 0;
+        this.grounded = true; this.fallingTriggered = false; this.falling = false;
       }
       return;
     }
@@ -768,40 +660,28 @@ class Enemy extends Entity {
       if (this.grounded && now >= this.nextJumpAt) {
         if (this.jumpsLeft > 0) {
           const toPlayer = player.x + player.w / 2 < this.x + this.w / 2 ? -1 : 1;
-          this.sx = toPlayer * jumpSpeed;
-          this.sy = jumpForce;
-          this.grounded = false;
-          this.nextJumpAt = now + this.jumpInterval;
-          this.jumpsLeft--;
+          this.sx = toPlayer * jumpSpeed; this.sy = jumpForce;
+          this.grounded = false; this.nextJumpAt = now + this.jumpInterval; this.jumpsLeft--;
         } else {
-          this.state = "punch";
-          this.punchFrame = 0;
-          this.punchNextAt = now;
-          this.punchDone = false;
+          this.state = "punch"; this.punchFrame = 0; this.punchNextAt = now; this.punchDone = false;
         }
       }
 
-      this.sy += gravity * dt;
-      this.x += this.sx * dt;
-      this.y += this.sy * dt;
+      this.sy += gravity * dt; this.x += this.sx * dt; this.y += this.sy * dt;
 
       if (!this.grounded && !this.fallingTriggered && this.sy > 0 && this.sy < 50) {
-        const distX = Math.abs((this.x + this.w / 2) - (player.x + player.w / 2));
+        const distX = Math.abs((this.x + this.w/2) - (player.x + player.w/2));
         if (distX < 150 && Math.random() < 0.1) {
-          this.falling = true;
-          this.fallingTriggered = true;
-          this.x = player.x + player.w / 2 - this.w / 2;
-          this.sx = 0;
+          this.falling = true; this.fallingTriggered = true;
+          this.x = player.x + player.w/2 - this.w/2; this.sx = 0;
         }
       }
 
       if (this.x < 0) { this.x = 0; this.sx = 0; }
       if (this.x + this.w > canvas.width) { this.x = canvas.width - this.w; this.sx = 0; }
-
       if (this.y >= GROUND_Y - this.h) {
-        this.y = GROUND_Y - this.h;
-        this.sy = 0; this.sx = 0;
-        this.grounded = true;
+        this.y = GROUND_Y - this.h; this.sy = 0; this.sx = 0;
+        this.grounded = true; this.fallingTriggered = false;
       }
 
       if (this.grounded) this.animate(sprites.enemyIdle, this.delayIdle);
@@ -812,100 +692,70 @@ class Enemy extends Entity {
       if (!this.punchDone && now >= this.punchNextAt) {
         this.image = sprites.enemyPunch[this.punchFrame];
         const { sw, sh } = this.getPunchScale(this.punchFrame);
-        this.w = Math.round(this.baseW * sw);
-        this.h = Math.round(this.baseH * sh);
-        this.y = GROUND_Y - this.h;
-        this.punchFrame++;
-        this.punchNextAt = now + 55;
+        this.w = Math.round(this.baseW * sw); this.h = Math.round(this.baseH * sh);
+        this.y = GROUND_Y - this.h; this.punchFrame++; this.punchNextAt = now + 55;
         if (this.punchFrame >= sprites.enemyPunch.length) this.punchDone = true;
       }
-
       if (this.punchDone) {
-        this.w = this.baseW; this.h = this.baseH;
-        this.y = GROUND_Y - this.h;
-        this.state = "jumping";
-        this.jumpsLeft = 5;
-        this.nextJumpAt = now + this.jumpInterval;
-        this.frame = 0;
+        this.w = this.baseW; this.h = this.baseH; this.y = GROUND_Y - this.h;
+        this.state = "jumping"; this.jumpsLeft = 5; this.nextJumpAt = now + this.jumpInterval; this.frame = 0;
       }
     }
   }
 
-   draw(ctx) {
+  draw(ctx) {
     if (!this.alive && !this.dying) return;
-
     const flashing = performance.now() < this.flashUntil;
     let img = this.image;
-
     if (flashing) {
-      // cria o canvas branco só uma vez por hit
       if (!this._flashImg || this._flashImg.width !== this.w || this._flashImg.height !== this.h) {
         const tmp = document.createElement("canvas");
         tmp.width = this.w; tmp.height = this.h;
         const t = tmp.getContext("2d");
         t.drawImage(this.image, 0, 0, this.w, this.h);
         t.globalCompositeOperation = "source-atop";
-        t.fillStyle = "white";
-        t.fillRect(0, 0, this.w, this.h);
+        t.fillStyle = "white"; t.fillRect(0, 0, this.w, this.h);
         this._flashImg = tmp;
       }
       img = this._flashImg;
-    } else {
-      this._flashImg = null; // limpa quando não está flashando
-    }
+    } else { this._flashImg = null; }
 
     ctx.save();
-    
-    if (this.facing === -1) {
-      ctx.drawImage(img, this.x, this.y, this.w, this.h);
-    } else {
-      ctx.translate(this.x + this.w, this.y);
-      ctx.scale(-1, 1);
-      ctx.drawImage(img, 0, 0, this.w, this.h);
-    }
+    if (this.facing === -1) { ctx.drawImage(img, this.x, this.y, this.w, this.h); }
+    else { ctx.translate(this.x + this.w, this.y); ctx.scale(-1, 1); ctx.drawImage(img, 0, 0, this.w, this.h); }
     ctx.restore();
   }
 }
 
-// ---------- BULLET -----------
+// ---------- BULLET ----------
 class Bullet extends Entity {
-    constructor(x, y, direction = 1, vertical = false) {
+  constructor(x, y, direction = 1, vertical = false) {
     const frame = sprites.bulletSpawn[0];
     super(x, y, frame.w, frame.h, null);
-    this.state = "spawn";
-    this.frame = 0;
-    this.nextFrameAt = 0;
+    this.state = "spawn"; this.frame = 0; this.nextFrameAt = 0;
     this.vertical = vertical;
     this.speed = vertical ? 0 : 800 * direction;
-    this.speedY = vertical ? -800 : 0; x
-    this.offsetX = frame.offsetX || 0;
-    this.offsetY = frame.offsetY || 0;
+    this.speedY = vertical ? -800 : 0;
+    this.offsetX = frame.offsetX || 0; this.offsetY = frame.offsetY || 0;
     this.image = bulletFrames.spawn[0];
   }
 
   animate(seq, frameData, delay, loop = true) {
     const now = performance.now();
     if (now >= this.nextFrameAt) {
-      this.frame = loop
-        ? (this.frame + 1) % seq.length
-        : Math.min(this.frame + 1, seq.length - 1);
+      this.frame = loop ? (this.frame + 1) % seq.length : Math.min(this.frame + 1, seq.length - 1);
       const fd = frameData[this.frame];
       this.image = seq[this.frame];
       this.w = fd.w; this.h = fd.h;
-      this.offsetX = fd.offsetX || 0;
-      this.offsetY = fd.offsetY || 0;
+      this.offsetX = fd.offsetX || 0; this.offsetY = fd.offsetY || 0;
       this.nextFrameAt = now + delay;
-
-      if (!loop && this.frame === seq.length - 1 && this.state === "spawn") {
-        this.state = "loop"; this.frame = -1;
-      }
+      if (!loop && this.frame === seq.length - 1 && this.state === "spawn") { this.state = "loop"; this.frame = -1; }
     }
   }
 
   update(dt) {
-    if (this.state === "spawn") {
-      this.animate(bulletFrames.spawn, sprites.bulletSpawn, 50, false);
-    } else if (this.state === "loop") {
+    if (this.state === "spawn") this.animate(bulletFrames.spawn, sprites.bulletSpawn, 50, false);
+    else if (this.state === "loop") {
       this.animate(bulletFrames.loop, sprites.bulletLoop, 60);
       this.x += this.speed * dt;
       this.y += this.speedY * dt;
@@ -920,11 +770,8 @@ class Bullet extends Entity {
       ctx.drawImage(this.image, -this.w / 2, -this.h / 2, this.w, this.h);
     } else if (this.speed < 0) {
       ctx.translate(this.x - this.offsetX + this.w, this.y - this.offsetY);
-      ctx.scale(-1, 1);
-      ctx.drawImage(this.image, 0, 0, this.w, this.h);
-    } else {
-      ctx.drawImage(this.image, this.x - this.offsetX, this.y - this.offsetY, this.w, this.h);
-    }
+      ctx.scale(-1, 1); ctx.drawImage(this.image, 0, 0, this.w, this.h);
+    } else { ctx.drawImage(this.image, this.x - this.offsetX, this.y - this.offsetY, this.w, this.h); }
     ctx.restore();
   }
 }
@@ -939,6 +786,13 @@ function loop(t) {
   const dt = Math.min((t - last) / 1000, 0.05);
   last = t;
 
+  if (!gameStarted) {
+    render();
+    drawIntro();
+    requestAnimationFrame(loop);
+    return;
+  }
+
   if (!gameOver && !victory) {
     player.update(dt);
     enemies.forEach(e => e.update(dt, player));
@@ -951,7 +805,7 @@ function loop(t) {
   } else if (gameOver && !victory) {
     updateGameOver();
   } else if (victory) {
-    player.update(dt); 
+    player.update(dt);
     enemies.forEach(e => e.update(dt, player));
   }
 
@@ -974,35 +828,20 @@ function render() {
     drawGameOver();
   }
 
-  drawHUD();
+  if (gameStarted) drawHUD();
   if (victory) drawVictory();
 }
 
 // ---------- UTIL ----------
-function resize() {
-  canvas.width = innerWidth;
-  canvas.height = innerHeight;
-  GROUND_Y = canvas.height - 120;
-}
+function resize() { canvas.width = innerWidth; canvas.height = innerHeight; GROUND_Y = canvas.height - 120; }
 
-function createAudio(src) {
-  const a = new Audio(src);
-  a.preload = "auto";
-  a.load();
-  return a;
-}
+function createAudio(src) { const a = new Audio(src); a.preload = "auto"; a.load(); return a; }
 
 function loadImage(src) {
-  return new Promise(res => {
-    const img = new Image();
-    img.src = src;
-    img.onload = () => res(img);
-  });
+  return new Promise(res => { const img = new Image(); img.src = src; img.onload = () => res(img); });
 }
 
-function loadImages(srcArray) {
-  return Promise.all(srcArray.map(loadImage));
-}
+function loadImages(srcArray) { return Promise.all(srcArray.map(loadImage)); }
 
 function canShoot() {
   const now = performance.now();
@@ -1018,23 +857,13 @@ function playShotSound() {
 function handleBulletEnemyCollisions() {
   for (let i = bullets.length - 1; i >= 0; i--) {
     if (i >= bullets.length) continue;
-    const b = bullets[i];
-    if (!b) continue;
+    const b = bullets[i]; if (!b) continue;
     const bx = b.x - b.offsetX, by = b.y - b.offsetY;
-
-    if (b.y < -200 || b.x < -200 || b.x > canvas.width + 200) {
-      bullets.splice(i, 1);
-      continue;
-    }
-
+    if (b.y < -200 || b.x < -200 || b.x > canvas.width + 200) { bullets.splice(i, 1); continue; }
     for (let j = 0; j < enemies.length; j++) {
       const e = enemies[j];
       if (!e.alive || e.dying) continue;
-      if (aabb(bx, by, b.w, b.h, e.x, e.y, e.w, e.h)) {
-        e.hit(1);
-        bullets.splice(i, 1);
-        break;
-      }
+      if (aabb(bx, by, b.w, b.h, e.x, e.y, e.w, e.h)) { e.hit(1); bullets.splice(i, 1); break; }
     }
   }
 }
@@ -1042,9 +871,7 @@ function handleBulletEnemyCollisions() {
 function handlePlayerEnemyCollisions() {
   enemies.forEach(e => {
     if (!e.alive || e.dying) return;
-    if (aabb(player.x, player.y, player.w, player.h, e.x, e.y, e.w, e.h)) {
-      player.takeHit(e.x + e.w / 2);
-    }
+    if (aabb(player.x, player.y, player.w, player.h, e.x, e.y, e.w, e.h)) player.takeHit(e.x + e.w / 2);
   });
 }
 
@@ -1053,56 +880,26 @@ function aabb(x1, y1, w1, h1, x2, y2, w2, h2) {
 }
 
 function triggerVictory() {
-  victory = true;
-  victoryFrame = 0;
-  victoryNextAt = performance.now();
-  victoryDone = false;
-
-  // para todos os sons
-  if (isRapidFiring) {
-    sounds.rapidFire.pause();
-    sounds.rapidFire.currentTime = 0;
-    isRapidFiring = false;
-  }
-  fireButtonPressedAt = 0;
-  clearTimeout(shotTimer);
-
-  // força player pro idle
-  player.state = "idle";
-  player.frame = 0;
-  player.sx = 0;
-  player.sy = 0;
-
-  // limpa todas as balas
+  victory = true; victoryFrame = 0; victoryNextAt = performance.now(); victoryDone = false;
+  if (isRapidFiring) { sounds.rapidFire.pause(); sounds.rapidFire.currentTime = 0; isRapidFiring = false; }
+  fireButtonPressedAt = 0; clearTimeout(shotTimer);
+  player.state = "idle"; player.frame = 0; player.sx = 0; player.sy = 0;
   bullets.length = 0;
 }
 
 function updateVictory() {
   if (victoryDone) return;
   const now = performance.now();
-  if (now >= victoryNextAt) {
-    victoryFrame++;
-    victoryNextAt = now + 60;
-    if (victoryFrame >= 8) victoryDone = true; // para no último frame
-  }
+  if (now >= victoryNextAt) { victoryFrame++; victoryNextAt = now + 60; if (victoryFrame >= 8) victoryDone = true; }
 }
 
 function drawVictory() {
   const cols = 4, rows = 7;
-  const fw = Math.round(5130 / cols);
-  const fh = Math.round(5056 / rows);
-  const col = victoryFrame % cols;
-  const row = Math.floor(victoryFrame / cols);
+  const fw = Math.round(5130 / cols), fh = Math.round(5056 / rows);
+  const col = victoryFrame % cols, row = Math.floor(victoryFrame / cols);
   const inset = 6;
-  const gw = canvas.width;  
-  const gh = canvas.height;
-
   ctx.save();
-  ctx.globalCompositeOperation = "screen"; 
-  ctx.drawImage(
-    victoryImg,
-    col * fw + inset, row * fh + inset, fw - inset * 2, fh - inset * 2,
-    0, 0, gw, gh
-  );
+  ctx.globalCompositeOperation = "screen";
+  ctx.drawImage(victoryImg, col*fw+inset, row*fh+inset, fw-inset*2, fh-inset*2, 0, 0, canvas.width, canvas.height);
   ctx.restore();
 }
