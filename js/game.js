@@ -829,7 +829,104 @@ function render() {
   }
 
   if (gameStarted) drawHUD();
+  if (gameStarted && !gameOver) drawBossHUD();
   if (victory) drawVictory();
+}
+
+// ---------- BOSS HP BAR ----------
+const BOSS_MAX_HP = 200;
+const BOSS_NAME = "King Slime"; // troca pelo nome que quiser
+
+function drawBossHUD() {
+  const boss = enemies[0];
+  if (!boss || boss.deathDone) return;
+
+  const barW = Math.min(canvas.width * 0.55, 600);
+  const barH = 18;
+  const cx = canvas.width / 2;
+  const barX = cx - barW / 2;
+  const barY = 38;
+  const hpRatio = Math.max(0, boss.hp / BOSS_MAX_HP);
+
+  // ── Nome do boss ──────────────────────────────────────────────
+  ctx.save();
+  ctx.font = "bold 15px serif";
+  ctx.letterSpacing = "3px";
+  ctx.textAlign = "center";
+
+  // sombra
+  ctx.fillStyle = "rgba(0,0,0,0.8)";
+  ctx.fillText(BOSS_NAME.toUpperCase(), cx + 2, barY - 10 + 2);
+
+  // texto principal com contorno amarelo
+  ctx.strokeStyle = "#b8860b";
+  ctx.lineWidth = 3;
+  ctx.strokeText(BOSS_NAME.toUpperCase(), cx + 2, barY - 10);
+  ctx.fillStyle = "#fff8dc";
+  ctx.fillText(BOSS_NAME.toUpperCase(), cx + 2, barY - 10);
+  ctx.restore();
+
+  // ── Fundo da barra (borda externa) ───────────────────────────
+  ctx.save();
+  ctx.fillStyle = "#1a0a00";
+  roundRect(ctx, barX - 4, barY - 4, barW + 8, barH + 8, 5);
+  ctx.fill();
+
+  // borda dourada
+  ctx.strokeStyle = "#b8860b";
+  ctx.lineWidth = 2;
+  roundRect(ctx, barX - 4, barY - 4, barW + 8, barH + 8, 5);
+  ctx.stroke();
+
+  // ── Fundo interno (trilho vazio) ──────────────────────────────
+  ctx.fillStyle = "#2a0a00";
+  roundRect(ctx, barX, barY, barW, barH, 3);
+  ctx.fill();
+
+  // ── Barra de HP com degradê ───────────────────────────────────
+  if (hpRatio > 0) {
+    const filledW = barW * hpRatio;
+
+    // cor muda conforme HP: verde → amarelo → vermelho
+    let color1, color2;
+    if (hpRatio > 0.5) {
+      color1 = "#e8f000"; color2 = "#a8b000"; // amarelo Cuphead
+    } else if (hpRatio > 0.25) {
+      color1 = "#ff8800"; color2 = "#cc5500"; // laranja
+    } else {
+      color1 = "#ff2200"; color2 = "#aa0000"; // vermelho crítico
+    }
+
+    const grad = ctx.createLinearGradient(barX, barY, barX, barY + barH);
+    grad.addColorStop(0, color1);
+    grad.addColorStop(0.5, color2);
+    grad.addColorStop(1, color1);
+
+    ctx.fillStyle = grad;
+    roundRect(ctx, barX, barY, filledW, barH, 3);
+    ctx.fill();
+
+    // brilho no topo da barra
+    const shine = ctx.createLinearGradient(barX, barY, barX, barY + barH * 0.45);
+    shine.addColorStop(0, "rgba(255,255,255,0.35)");
+    shine.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = shine;
+    roundRect(ctx, barX, barY, filledW, barH * 0.45, 3);
+    ctx.fill();
+  }
+
+  // ── Divisórias de fase (a cada 25% de HP) ────────────────────
+  [0.25, 0.5, 0.75].forEach(pct => {
+    const divX = barX + barW * pct;
+    ctx.strokeStyle = "rgba(0,0,0,0.6)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(divX, barY + 2);
+    ctx.lineTo(divX, barY + barH - 2);
+    ctx.stroke();
+  });
+
+  ctx.restore();
 }
 
 // ---------- UTIL ----------
@@ -902,4 +999,18 @@ function drawVictory() {
   ctx.globalCompositeOperation = "screen";
   ctx.drawImage(victoryImg, col*fw+inset, row*fh+inset, fw-inset*2, fh-inset*2, 0, 0, canvas.width, canvas.height);
   ctx.restore();
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
 }
