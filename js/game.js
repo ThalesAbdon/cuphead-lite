@@ -671,9 +671,10 @@ class Enemy extends Entity {
 
       if (!this.grounded && !this.fallingTriggered && this.sy > 0 && this.sy < 50) {
         const distX = Math.abs((this.x + this.w/2) - (player.x + player.w/2));
-        if (distX < 150 && Math.random() < 0.1) {
+        if (distX < 150 && Math.random() < 0.15) {
           this.falling = true; this.fallingTriggered = true;
           this.x = player.x + player.w/2 - this.w/2; this.sx = 0;
+          triggerShake(25, 22);
         }
       }
 
@@ -817,6 +818,8 @@ requestAnimationFrame(loop);
 
 function render() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.save();
+  applyShake();
   bgLayers.forEach(l => ctx.drawImage(l.img, 0, 0, canvas.width, canvas.height));
 
   if (!gameOver) {
@@ -827,7 +830,7 @@ function render() {
     enemies.forEach(e => e.draw(ctx));
     drawGameOver();
   }
-
+  ctx.restore();
   if (gameStarted) drawHUD();
   if (gameStarted && !gameOver) drawBossHUD();
   if (victory) drawVictory();
@@ -927,6 +930,24 @@ function drawBossHUD() {
   });
 
   ctx.restore();
+}
+
+// ---------- CAMERA SHAKE ----------
+let shakeDuration = 0;
+let shakeMagnitude = 0;
+
+function triggerShake(duration, magnitude) {
+  shakeDuration = duration;
+  shakeMagnitude = magnitude;
+}
+
+function applyShake() {
+  if (shakeDuration <= 0) return;
+  const dx = (Math.random() * 2 - 1) * shakeMagnitude;
+  const dy = (Math.random() * 2 - 1) * shakeMagnitude;
+  ctx.translate(dx, dy);
+  shakeDuration--;
+  shakeMagnitude *= 0.85;
 }
 
 // ---------- UTIL ----------
