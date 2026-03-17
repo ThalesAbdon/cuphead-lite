@@ -798,6 +798,7 @@ function loop(t) {
     player.update(dt);
     enemies.forEach(e => e.update(dt, player));
     bullets.forEach(b => b.update(dt));
+    updateParticles(dt);
     handleBulletEnemyCollisions();
     handlePlayerEnemyCollisions();
     for (let i = bullets.length - 1; i >= 0; i--) {
@@ -826,6 +827,7 @@ function render() {
     enemies.forEach(e => e.draw(ctx));
     player.draw(ctx);
     bullets.forEach(b => b.draw(ctx));
+    drawParticles();
   } else {
     enemies.forEach(e => e.draw(ctx));
     drawGameOver();
@@ -950,6 +952,75 @@ function applyShake() {
   shakeMagnitude *= 0.85;
 }
 
+// ---------- SLIME PARTICLES ----------
+const particles = [];
+
+const SLIME_COLORS = ["#3a9de0", "#1a6db8", "#70c8ff", "#0d4a8a", "#a0ddff"];
+
+function spawnSlimeParticles(x, y) {
+  const count = 6 + Math.floor(Math.random() * 6); // 6 a 11 partículas
+  for (let i = 0; i < count; i++) {
+    const big = Math.random() < 0.3; // 30% de chance de ser grande
+    const angle = Math.random() * Math.PI * 2;
+    const speed = big ? 80 + Math.random() * 120 : 180 + Math.random() * 260;
+    particles.push({
+      x, y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed - (big ? 80 : 140), // leve arco pra cima
+      r: big ? 7 + Math.random() * 6 : 2 + Math.random() * 4,
+      color: SLIME_COLORS[Math.floor(Math.random() * SLIME_COLORS.length)],
+      alpha: 1,
+      life: big ? 0.45 + Math.random() * 0.2 : 0.25 + Math.random() * 0.2,
+      maxLife: 0,
+      gravity: 600,
+      squash: 1, // estica na direção do movimento
+    });
+    particles[particles.length - 1].maxLife = particles[particles.length - 1].life;
+  }
+}
+
+function updateParticles(dt) {
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.vy += p.gravity * dt;
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    p.life -= dt;
+    p.alpha = Math.max(0, p.life / p.maxLife);
+
+    const spd = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
+    p.squash = 1 + spd / 800;
+
+    if (p.life <= 0) particles.splice(i, 1);
+  }
+}
+
+function drawParticles() {
+  particles.forEach(p => {
+    const angle = Math.atan2(p.vy, p.vx);
+    ctx.save();
+    ctx.globalAlpha = p.alpha;
+    ctx.translate(p.x, p.y);
+    ctx.rotate(angle);
+    ctx.scale(p.squash, 1 / p.squash); // estica no eixo do movimento
+
+    // gota de slime
+    ctx.beginPath();
+    ctx.ellipse(0, 0, p.r * p.squash, p.r, 0, 0, Math.PI * 2);
+    ctx.fillStyle = p.color;
+    ctx.fill();
+
+    // brilhinho no topo da gota
+    ctx.beginPath();
+    ctx.ellipse(-p.r * 0.2, -p.r * 0.25, p.r * 0.3, p.r * 0.2, -0.5, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(255,255,255,0.5)";
+    ctx.fill();
+
+    ctx.restore();
+  });
+  ctx.globalAlpha = 1;
+}
+
 // ---------- UTIL ----------
 function resize() { canvas.width = innerWidth; canvas.height = innerHeight; GROUND_Y = canvas.height - 120; }
 
@@ -981,7 +1052,12 @@ function handleBulletEnemyCollisions() {
     for (let j = 0; j < enemies.length; j++) {
       const e = enemies[j];
       if (!e.alive || e.dying) continue;
-      if (aabb(bx, by, b.w, b.h, e.x, e.y, e.w, e.h)) { e.hit(1); bullets.splice(i, 1); break; }
+      if (aabb(bx, by, b.w, b.h, e.x, e.y, e.w, e.h)) {
+        e.hit(1);
+        spawnSlimeParticles(bx + b.w / 2, by + b.h / 2); 
+        bullets.splice(i, 1);
+        break;
+      }
     }
   }
 }
