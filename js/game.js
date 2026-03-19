@@ -31,7 +31,9 @@ const sounds = {
   oneShoot: createAudio("assets/audio/one shoot.mp3"),
   twoBullets: createAudio("assets/audio/two bullets.mp3"),
   rapidFire: createAudio("assets/audio/rapid fire.mp3"),
+  bgMusic: createAudio("assets/audio/music.mp3"),
 };
+sounds.bgMusic.volume = 0.1;
 
 const hpSheet = await loadImage("assets/sprites/ui/hp.png");
 const gameOverImg = await loadImage("assets/sprites/ui/gameover.png");
@@ -312,7 +314,11 @@ function drawIntro() {
 }
 
 window.addEventListener("keydown", (e) => {
-  if (e.code === "Enter" && !gameStarted) gameStarted = true;
+  if (e.code === "Enter" && !gameStarted) {
+    gameStarted = true;
+    sounds.bgMusic.loop = true;
+    sounds.bgMusic.play();
+  }
 });
 
 // ---------- HUD ----------
@@ -337,6 +343,8 @@ function drawHUD() {
 
 // ---------- GAME OVER ----------
 function triggerGameOver() {
+  sounds.bgMusic.pause();
+  sounds.bgMusic.currentTime = 0;
   gameOver = true;
   deathFrame = 0;
   deathNextAt = performance.now();
@@ -1090,6 +1098,8 @@ function aabb(x1, y1, w1, h1, x2, y2, w2, h2) {
 
 function triggerVictory() {
   victory = true; victoryFrame = 0; victoryNextAt = performance.now(); victoryDone = false;
+  sounds.bgMusic.pause();
+  sounds.bgMusic.currentTime = 0;
   if (isRapidFiring) { sounds.rapidFire.pause(); sounds.rapidFire.currentTime = 0; isRapidFiring = false; }
   fireButtonPressedAt = 0; clearTimeout(shotTimer);
   player.state = "idle"; player.frame = 0; player.sx = 0; player.sy = 0;
