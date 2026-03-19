@@ -599,6 +599,12 @@ class Enemy extends Entity {
     this.deathDone = false; this._flashImg = null;
   }
 
+  getPhase() {
+    if (this.hp > BOSS_MAX_HP * 0.66) return 1;
+    if (this.hp > BOSS_MAX_HP * 0.33) return 2;
+    return 3;
+  }
+
   animate(seq, delay) {
     const now = performance.now();
     if (now >= this.nextFrameAt) {
@@ -642,7 +648,13 @@ class Enemy extends Entity {
     }
     if (!this.alive) return;
 
-    const gravity = 1800, jumpForce = -1300, jumpSpeed = 230;
+    const phase = this.getPhase();
+    const gravity = 1800;
+    const jumpForce    = phase === 1 ? -1300 : phase === 2 ? -1450 : -1600;
+    const jumpSpeed    = phase === 1 ?   230 : phase === 2 ?   320 :   420;
+    const punchDelay   = phase === 1 ?    55 : phase === 2 ?    40 :    25;
+    this.jumpInterval  = phase === 1 ?  1650 : phase === 2 ?  1100 :   700;
+
     const now = performance.now();
     this.facing = player.x + player.w / 2 < this.x + this.w / 2 ? -1 : 1;
 
@@ -694,7 +706,7 @@ class Enemy extends Entity {
         this.image = sprites.enemyPunch[this.punchFrame];
         const { sw, sh } = this.getPunchScale(this.punchFrame);
         this.w = Math.round(this.baseW * sw); this.h = Math.round(this.baseH * sh);
-        this.y = GROUND_Y - this.h; this.punchFrame++; this.punchNextAt = now + 55;
+        this.y = GROUND_Y - this.h; this.punchFrame++; this.punchNextAt = now + punchDelay;
         if (this.punchFrame >= sprites.enemyPunch.length) this.punchDone = true;
       }
       if (this.punchDone) {
@@ -724,6 +736,7 @@ class Enemy extends Entity {
     ctx.save();
     if (this.facing === -1) { ctx.drawImage(img, this.x, this.y, this.w, this.h); }
     else { ctx.translate(this.x + this.w, this.y); ctx.scale(-1, 1); ctx.drawImage(img, 0, 0, this.w, this.h); }
+
     ctx.restore();
   }
 }
@@ -1064,7 +1077,7 @@ function handleBulletEnemyCollisions() {
 
 function handlePlayerEnemyCollisions() {
   if (player.state === "dash" || player.state === "dashAir") return;
-  
+
   enemies.forEach(e => {
     if (!e.alive || e.dying) return;
     if (aabb(player.x, player.y, player.w, player.h, e.x, e.y, e.w, e.h)) player.takeHit(e.x + e.w / 2);
