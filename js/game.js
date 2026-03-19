@@ -1063,6 +1063,8 @@ function handleBulletEnemyCollisions() {
 }
 
 function handlePlayerEnemyCollisions() {
+  if (player.state === "dash" || player.state === "dashAir") return;
+  
   enemies.forEach(e => {
     if (!e.alive || e.dying) return;
     if (aabb(player.x, player.y, player.w, player.h, e.x, e.y, e.w, e.h)) player.takeHit(e.x + e.w / 2);
