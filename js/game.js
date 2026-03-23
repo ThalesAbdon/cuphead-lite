@@ -479,8 +479,13 @@ class Player extends Entity {
           this.sx = 0;
           this.animate(sprites.playerTurn, this.delayTurn, true);
           const oppositeHeld = (this.turnFrom === 1 && left) || (this.turnFrom === -1 && right);
-          if (this.frame === sprites.playerTurn.length - 1 && oppositeHeld) {
-            this.facing *= -1; this.state = "run"; this.frame = 0; this.turnFrom = 0;
+          if (this.frame === sprites.playerTurn.length - 1) {
+            if (oppositeHeld) {
+              this.facing *= -1; this.state = "run"; this.frame = 0; this.turnFrom = 0;
+            } else {
+              // soltou a tecla durante a virada — volta pra idle
+              this.state = "idle"; this.frame = 0; this.turnFrom = 0;
+            }
           }
           break;
         case "shoot":
