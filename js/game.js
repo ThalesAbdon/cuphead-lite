@@ -288,10 +288,10 @@ function drawIntro() {
 
   ctx.font = "24px serif";
   const controls = [
-    "← →    Mover",
-    "SPACE   Pular",
-    "Z       Atirar",
-    "↑ + Z   Atirar pra cima",
+    "← →    Move",
+    "SPACE   Jump",
+    "Z       Shoot",
+    "↑ + Z   Shoot Up",
     "X       Dash",
   ];
   controls.forEach((line, i) => {
@@ -318,6 +318,9 @@ window.addEventListener("keydown", (e) => {
     gameStarted = true;
     sounds.bgMusic.loop = true;
     sounds.bgMusic.play();
+  }
+  if (e.code === "Enter" && gameOver && showGameOver) {
+    resetGame();
   }
 });
 
@@ -377,7 +380,15 @@ function drawGameOver() {
     const gw = Math.min(canvas.width * 0.5, 540);
     const gh = gw * ((frameH - inset * 2) / (frameW - inset * 2));
     ctx.drawImage(gameOverImg, inset, inset, frameW - inset * 2, frameH - inset * 2,
-      canvas.width / 2 - gw / 2, canvas.height / 2 - gh / 2, gw, gh);
+    canvas.width / 2 - gw / 2, canvas.height / 2 - gh / 2, gw, gh);
+    const blink = Math.floor(performance.now() / 500) % 2 === 0;
+    if (blink) {
+      ctx.font = "bold 28px serif";
+      ctx.fillStyle = "#FFD700";
+      ctx.textAlign = "center";
+      ctx.fillText("Press ENTER to Continue", canvas.width / 2, canvas.height / 2 + 160);
+      ctx.textAlign = "left";
+    }  
   }
 }
 
@@ -483,7 +494,6 @@ class Player extends Entity {
             if (oppositeHeld) {
               this.facing *= -1; this.state = "run"; this.frame = 0; this.turnFrom = 0;
             } else {
-              // soltou a tecla durante a virada — volta pra idle
               this.state = "idle"; this.frame = 0; this.turnFrom = 0;
             }
           }
@@ -1140,4 +1150,16 @@ function roundRect(ctx, x, y, w, h, r) {
   ctx.lineTo(x, y + r);
   ctx.quadraticCurveTo(x, y, x + r, y);
   ctx.closePath();
+}
+
+function resetGame() {
+  gameOver = false; showGameOver = false;
+  deathFrame = 0; deathNextAt = 0;
+  bullets.length = 0; particles.length = 0;
+  player.x = 100; player.y = GROUND_Y - 128;
+  player.sx = 0; player.sy = 0;
+  player.init();
+  enemies[0] = new Enemy(1640);
+  sounds.bgMusic.currentTime = 0;
+  sounds.bgMusic.play();
 }
