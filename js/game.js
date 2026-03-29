@@ -956,8 +956,7 @@ function drawBossHUD() {
     ctx.fill();
   }
 
-  // ── Divisórias de fase (a cada 25% de HP) ────────────────────
-  [0.25, 0.5, 0.75].forEach(pct => {
+  [0.33, 0.66].forEach(pct => {
     const divX = barX + barW * pct;
     ctx.strokeStyle = "rgba(0,0,0,0.6)";
     ctx.lineWidth = 2;
